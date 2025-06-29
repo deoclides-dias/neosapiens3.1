@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2015",                      // 👈 ADICIONE ISSO
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "downlevelIteration": true,             // 👈 ADICIONE ISSO
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
