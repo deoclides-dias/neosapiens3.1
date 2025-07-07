@@ -1,17 +1,17 @@
 // src/pages/onboarding.tsx - PARTE 1/4
 // ============================================================================
-// IMPORTS E INTERFACES - VERSÃO COMPLETA COM REVOLUÇÃO PSICOLÓGICA
+// IMPORTS E INTERFACES
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { 
-  User, 
-  Calendar, 
-  Activity, 
-  Brain, 
-  CheckCircle, 
-  ArrowRight, 
+import {
+  User,
+  Calendar,
+  Activity,
+  Brain,
+  CheckCircle,
+  ArrowRight,
   ArrowLeft,
   Clock,
   Target,
@@ -22,14 +22,35 @@ import {
 
 // Hooks e Serviços
 import { useAuth } from '../hooks/useAuth';
-import { usePsychologicalForm } from '../hooks/Old-usePsychologicalForm';
+import { usePsychologicalForm } from '../hooks/usePsychologicalForm';
 
 // Componentes de Formulários
 import BirthDataForm from '../components/onboarding/BirthDataForm';
 import BiohackingForm from '../components/onboarding/BiohackingForm';
 import PsychologicalForm from '../components/onboarding/PsychologicalForm';
-// Tipos do Biohacking (existente)
-import { BiohackingData } from '../types/biohacking';
+
+// CORREÇÃO: Tipos locais em vez de import externo
+interface BiohackingData {
+  anthropometric: {
+    height: number;
+    currentWeight: number;
+    desiredWeight: number;
+    bodyType: string;
+    weightHistory: {
+      maxWeight: number;
+      minAdultWeight: number;
+      recentWeightChanges: string;
+      easyWeightChange: string;
+      weightConcerns: string[];
+    };
+  };
+  sleep: any;
+  nutrition: any;
+  physicalActivity: any;
+  healthStatus: any;
+  functionalMedicine: any;
+  cognitive: any;
+}
 
 // ============================================================================
 // INTERFACES E TIPOS
@@ -43,7 +64,7 @@ interface PersonalData {
   birthDate: string;
 }
 
-// Dados de Nascimento (já existente)
+// Dados de Nascimento
 interface BirthData {
   fullName: string;
   birthDate: string;
@@ -54,7 +75,7 @@ interface BirthData {
   timezone: string;
 }
 
-// Dados Cognitivos (futuro)
+// Dados Cognitivos
 interface CognitiveData {
   learningStyle?: string;
   focusLevel?: number;
@@ -63,7 +84,7 @@ interface CognitiveData {
   currentPractices?: string[];
 }
 
-// ✨ NOVOS TIPOS - REVOLUÇÃO PSICOLÓGICA
+// Tipos Psicológicos
 interface PsychologicalScores {
   bigFive: {
     openness: number;
@@ -104,7 +125,7 @@ interface PsychologicalScores {
   completionPercentage: number;
 }
 
-// ✨ ESTADOS DO ONBOARDING EXPANDIDOS
+// Estados do Onboarding
 type OnboardingStep = 'personal' | 'birth' | 'biohacking' | 'psychological' | 'cognitive' | 'complete';
 
 interface OnboardingState {
@@ -113,526 +134,282 @@ interface OnboardingState {
   personalData?: PersonalData;
   birthData?: BirthData;
   biohackingData?: BiohackingData;
-  psychologicalData?: PsychologicalScores;  // ✨ NOVO
+  psychologicalData?: PsychologicalScores;
   cognitiveData?: CognitiveData;
-  isLoading: boolean;
   error?: string;
 }
-
-// Configuração dos Steps
-interface StepConfig {
-  id: OnboardingStep;
-  title: string;
-  icon: any;
-  description: string;
-  questionsCount?: number;
-  estimatedTime?: string;
-  isRevolutionary?: boolean;
-}
-
-// ============================================================================
-// CONFIGURAÇÃO DOS STEPS
-// ============================================================================
-
-const STEPS_CONFIG: StepConfig[] = [
-  {
-    id: 'personal',
-    title: 'Dados Pessoais',
-    icon: User,
-    description: 'Informações básicas sobre você',
-    questionsCount: 4,
-    estimatedTime: '2 min'
-  },
-  {
-    id: 'birth',
-    title: 'Dados de Nascimento',
-    icon: Calendar,
-    description: 'Data, hora e local de nascimento',
-    questionsCount: 5,
-    estimatedTime: '3 min'
-  },
-  {
-    id: 'biohacking',
-    title: 'Avaliação Biohacking',
-    icon: Activity,
-    description: 'Sono, nutrição e atividade física',
-    questionsCount: 25,
-    estimatedTime: '8 min'
-  },
-  {
-    id: 'psychological',
-    title: 'Avaliação Psicológica',
-    icon: Brain,
-    description: 'Big Five + DISC + VARK + MTC Yin/Yang + 5 Elementos',
-    questionsCount: 104,
-    estimatedTime: '25 min',
-    isRevolutionary: true  // ✨ MARCAÇÃO ESPECIAL
-  },
-  {
-    id: 'cognitive',
-    title: 'Perfil Cognitivo',
-    icon: Zap,
-    description: 'Aprendizado, foco e criatividade',
-    questionsCount: 15,
-    estimatedTime: '5 min'
-  }
-];
-
-// ============================================================================
-// CONSTANTES
-// ============================================================================
-
-const TOTAL_STEPS = STEPS_CONFIG.length;
-const REVOLUTIONARY_STEP = 'psychological';
-
-// ============================================================================
-// CONTINUA NA PARTE 2/4 - COMPONENTE PRINCIPAL E ESTADO
-// ============================================================================
-
 // src/pages/onboarding.tsx - PARTE 2/4
 // ============================================================================
-// COMPONENTE PRINCIPAL E GERENCIAMENTO DE ESTADO
+// COMPONENTE PRINCIPAL E HANDLERS
 // ============================================================================
-// (Cole esta parte após a PARTE 1/4)
 
 const OnboardingPage: React.FC = () => {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading } = useAuth();
   
-  // ✨ NOSSO HOOK REVOLUCIONÁRIO
-  const psychologicalForm = usePsychologicalForm();
-  
-  // Estado principal do onboarding
+  // Estados principais
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
-    currentStep: 'birth', // Começar com nascimento (pula personal por enquanto)
-    completedSteps: [],
-    isLoading: false,
-    error: undefined
+    currentStep: 'personal',
+    completedSteps: []
   });
+  
+  const [isLoading, setIsLoading] = useState(false);
 
-  // ============================================================================
-  // EFFECTS - AUTENTICAÇÃO E CARREGAMENTO
-  // ============================================================================
-
-  // Verificar autenticação
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/auth/login');
-        return;
-      }
-      // Usuário autenticado, carregar progresso
-      loadUserProgress();
-    }
-  }, [user, authLoading, router]);
-
-  // ============================================================================
-  // FUNÇÕES DE CARREGAMENTO E PERSISTÊNCIA
-  // ============================================================================
-
-  const loadUserProgress = async () => {
-    if (!user?.id) return;
-
-    try {
-      setOnboardingState(prev => ({ ...prev, isLoading: true, error: undefined }));
-
-      // TODO: Implementar carregamento do progresso do Supabase
-      // Por enquanto, começar do birth
-      setOnboardingState(prev => ({
-        ...prev,
-        currentStep: 'birth',
-        isLoading: false
-      }));
-
-      // Carregar progresso da avaliação psicológica se existir
-      await psychologicalForm.loadProgress();
-
-    } catch (error) {
-      console.error('Erro ao carregar progresso:', error);
-      setOnboardingState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Erro ao carregar progresso. Começando do início.'
-      }));
-    }
-  };
-
-  const saveOverallProgress = async () => {
-    if (!user?.id) return;
-
-    try {
-      // TODO: Implementar salvamento do progresso geral no Supabase
-      console.log('Salvando progresso geral:', {
-        userId: user.id,
-        currentStep: onboardingState.currentStep,
-        completedSteps: onboardingState.completedSteps,
-        personalData: onboardingState.personalData,
-        birthData: onboardingState.birthData,
-        biohackingData: onboardingState.biohackingData,
-        psychologicalData: onboardingState.psychologicalData,
-        cognitiveData: onboardingState.cognitiveData
-      });
-    } catch (error) {
-      console.error('Erro ao salvar progresso:', error);
-    }
-  };
-
-  // ============================================================================
-  // FUNÇÕES DE NAVEGAÇÃO
-  // ============================================================================
-
-  const goToStep = (step: OnboardingStep) => {
-    setOnboardingState(prev => ({
-      ...prev,
-      currentStep: step,
-      error: undefined
-    }));
-  };
-
-  const markStepComplete = (step: OnboardingStep) => {
-    setOnboardingState(prev => ({
-      ...prev,
-      completedSteps: [...prev.completedSteps.filter(s => s !== step), step]
-    }));
-  };
-
-  const goToNextStep = () => {
-    const currentIndex = STEPS_CONFIG.findIndex(s => s.id === onboardingState.currentStep);
-    if (currentIndex < STEPS_CONFIG.length - 1) {
-      const nextStep = STEPS_CONFIG[currentIndex + 1].id;
-      goToStep(nextStep);
-    } else {
-      goToStep('complete');
-    }
-  };
-
-  const goToPreviousStep = () => {
-    const currentIndex = STEPS_CONFIG.findIndex(s => s.id === onboardingState.currentStep);
-    if (currentIndex > 0) {
-      const prevStep = STEPS_CONFIG[currentIndex - 1].id;
-      goToStep(prevStep);
-    } else {
-      router.push('/'); // Voltar para home
-    }
-  };
+  // Hook psicológico
+  const psychologicalForm = usePsychologicalForm();
 
   // ============================================================================
   // HANDLERS DOS FORMULÁRIOS
   // ============================================================================
 
-  const handlePersonalDataComplete = async (data: PersonalData) => {
+  const handlePersonalComplete = async (data: PersonalData): Promise<void> => {
     try {
+      console.log('👤 Dados pessoais recebidos:', data);
+      
       setOnboardingState(prev => ({
         ...prev,
-        personalData: data
+        personalData: data,
+        completedSteps: [...prev.completedSteps.filter(s => s !== 'personal'), 'personal'],
+        currentStep: 'birth'
       }));
       
-      markStepComplete('personal');
-      await saveOverallProgress();
-      goToStep('birth');
+      console.log('✅ Dados pessoais salvos e navegação para birth');
     } catch (error) {
-      console.error('Erro ao processar dados pessoais:', error);
+      console.error('❌ Erro no handlePersonalComplete:', error);
       setOnboardingState(prev => ({
         ...prev,
-        error: 'Erro ao salvar dados pessoais'
+        error: error instanceof Error ? error.message : 'Erro ao processar dados pessoais'
       }));
     }
   };
 
-  const handleBirthDataComplete = async (data: BirthData) => {
+  const handleBirthComplete = async (data: BirthData): Promise<void> => {
     try {
+      console.log('🌟 Dados de nascimento recebidos:', data);
+      
       setOnboardingState(prev => ({
         ...prev,
-        birthData: data
+        birthData: data,
+        completedSteps: [...prev.completedSteps.filter(s => s !== 'birth'), 'birth'],
+        currentStep: 'biohacking'
       }));
       
-      markStepComplete('birth');
-      await saveOverallProgress();
-      goToStep('biohacking');
+      console.log('✅ Dados de nascimento salvos e navegação para biohacking');
     } catch (error) {
-      console.error('Erro ao processar dados de nascimento:', error);
+      console.error('❌ Erro no handleBirthComplete:', error);
       setOnboardingState(prev => ({
         ...prev,
-        error: 'Erro ao salvar dados de nascimento'
+        error: error instanceof Error ? error.message : 'Erro ao processar dados de nascimento'
       }));
     }
   };
 
-  const handleBiohackingComplete = async (data: BiohackingData) => {
+ const handleBiohackingComplete = async (data: any): Promise<void> => {
     try {
-      setOnboardingState(prev => ({
-        ...prev,
-        biohackingData: data
-      }));
+      console.log('💪 Dados de biohacking recebidos:', data);
       
-      markStepComplete('biohacking');
-      await saveOverallProgress();
-      goToStep('psychological'); // ✨ IR PARA NOSSA REVOLUÇÃO!
-    } catch (error) {
-      console.error('Erro ao processar dados biohacking:', error);
-      setOnboardingState(prev => ({
-        ...prev,
-        error: 'Erro ao salvar dados de biohacking'
-      }));
-    }
-  };
-
-  // ✨ HANDLER REVOLUCIONÁRIO - AVALIAÇÃO PSICOLÓGICA
-  const handlePsychologicalComplete = async () => {
-    try {
-      setOnboardingState(prev => ({
-        ...prev,
-        isLoading: true,
-        error: undefined
-      }));
-
-      // Finalizar avaliação psicológica usando nosso hook
-      const scores = await psychologicalForm.finalizePsychologicalAssessment();
-
-      if (scores) {
-        setOnboardingState(prev => ({
-          ...prev,
-          psychologicalData: scores,
-          isLoading: false
-        }));
-
-        markStepComplete('psychological');
-        await saveOverallProgress();
-        goToStep('cognitive');
-      } else {
-        throw new Error('Erro ao calcular scores da avaliação psicológica');
+      // Validação básica
+      if (!data.anthropometric?.height || !data.anthropometric?.currentWeight) {
+        throw new Error('Dados antropométricos básicos são obrigatórios');
       }
-    } catch (error) {
-      console.error('Erro ao finalizar avaliação psicológica:', error);
-      setOnboardingState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Erro ao finalizar avaliação psicológica. Tente novamente.'
-      }));
-    }
-  };
 
-  const handleCognitiveComplete = async (data: CognitiveData) => {
-    try {
       setOnboardingState(prev => ({
         ...prev,
-        cognitiveData: data
+        biohackingData: data,
+        completedSteps: [...prev.completedSteps.filter(s => s !== 'biohacking'), 'biohacking'],
+        currentStep: 'psychological'
       }));
       
-      markStepComplete('cognitive');
-      await saveOverallProgress();
-      goToStep('complete');
+      console.log('✅ Dados de biohacking salvos e navegação para psychological');
     } catch (error) {
-      console.error('Erro ao processar dados cognitivos:', error);
+      console.error('❌ Erro no handleBiohackingComplete:', error);
       setOnboardingState(prev => ({
         ...prev,
-        error: 'Erro ao salvar dados cognitivos'
+        error: error instanceof Error ? error.message : 'Erro ao processar dados de biohacking'
       }));
     }
   };
 
-  const handleOnboardingComplete = async () => {
+  const handlePsychologicalComplete = async (data: PsychologicalScores): Promise<void> => {
     try {
-      // Salvar dados finais e redirecionar para dashboard
-      await saveOverallProgress();
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Erro ao finalizar onboarding:', error);
+      console.log('🧠 Dados psicológicos recebidos:', data);
+      
       setOnboardingState(prev => ({
         ...prev,
-        error: 'Erro ao finalizar onboarding'
+        psychologicalData: data,
+        completedSteps: [...prev.completedSteps.filter(s => s !== 'psychological'), 'psychological'],
+        currentStep: 'cognitive'
+      }));
+      
+      console.log('✅ Dados psicológicos salvos e navegação para cognitive');
+    } catch (error) {
+      console.error('❌ Erro no handlePsychologicalComplete:', error);
+      setOnboardingState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Erro ao processar dados psicológicos'
+      }));
+    }
+  };
+
+  const handleCognitiveComplete = async (data: CognitiveData): Promise<void> => {
+    try {
+      console.log('⚡ Dados cognitivos recebidos:', data);
+      
+      setOnboardingState(prev => ({
+        ...prev,
+        cognitiveData: data,
+        completedSteps: [...prev.completedSteps.filter(s => s !== 'cognitive'), 'cognitive'],
+        currentStep: 'complete'
+      }));
+      
+      console.log('✅ Onboarding completo! Navegando para resultados...');
+      
+      // Navegar para página de resultados
+      setTimeout(() => {
+        router.push('/results');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Erro no handleCognitiveComplete:', error);
+      setOnboardingState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Erro ao processar dados cognitivos'
       }));
     }
   };
 
   // ============================================================================
-  // FUNÇÕES AUXILIARES
+  // NAVEGAÇÃO ENTRE STEPS
   // ============================================================================
 
-  const getCurrentStepIndex = () => {
-    return STEPS_CONFIG.findIndex(s => s.id === onboardingState.currentStep);
+  const goToNextStep = () => {
+    const steps: OnboardingStep[] = ['personal', 'birth', 'biohacking', 'psychological', 'cognitive', 'complete'];
+    const currentIndex = steps.indexOf(onboardingState.currentStep);
+    
+    if (currentIndex < steps.length - 1) {
+      setOnboardingState(prev => ({
+        ...prev,
+        currentStep: steps[currentIndex + 1]
+      }));
+    }
   };
 
-  const getProgressPercentage = () => {
-    const currentIndex = getCurrentStepIndex();
-    return Math.round(((currentIndex + 1) / TOTAL_STEPS) * 100);
-  };
-
-  const isStepCompleted = (stepId: OnboardingStep) => {
-    return onboardingState.completedSteps.includes(stepId);
+  const goToPreviousStep = () => {
+    const steps: OnboardingStep[] = ['personal', 'birth', 'biohacking', 'psychological', 'cognitive', 'complete'];
+    const currentIndex = steps.indexOf(onboardingState.currentStep);
+    
+    if (currentIndex > 0) {
+      setOnboardingState(prev => ({
+        ...prev,
+        currentStep: steps[currentIndex - 1]
+      }));
+    }
   };
 
   // ============================================================================
-  // LOADING E ERROR STATES
+  // VERIFICAÇÃO DE AUTENTICAÇÃO
   // ============================================================================
 
-  if (authLoading || onboardingState.isLoading) {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/');
+      return;
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Carregando...</h2>
-          <p className="text-slate-300">Preparando sua jornada de autoconhecimento</p>
+          <Loader className="w-8 h-8 text-white animate-spin mx-auto mb-4" />
+          <p className="text-white">Carregando...</p>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return null; // Redirecionamento em andamento
+    return null;
   }
-
-  // ============================================================================
-  // CONTINUA NA PARTE 3/4 - RENDERIZAÇÃO DOS COMPONENTES
-  // ============================================================================
-
   // src/pages/onboarding.tsx - PARTE 3/4
 // ============================================================================
-// RENDERIZAÇÃO DOS COMPONENTES E STEPS
+// RENDER DO COMPONENTE - STEPS PRINCIPAIS
 // ============================================================================
-// (Cole esta parte após a PARTE 2/4)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      
-      {/* ========================================================================
-          HEADER COM PROGRESSO
-      ======================================================================== */}
-      <div className="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+      <div className="container mx-auto px-4 py-8">
+        
+        {/* Header com Progresso */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Jornada de Autoconhecimento
+          </h1>
+          <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+            Um processo revolucionário que integra tradições ancestrais com ciência moderna
+          </p>
           
-          {/* Título e Progresso Geral */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                Jornada de Autoconhecimento NeoSapiens
-              </h1>
-              <p className="text-slate-300">
-                Descobrindo as três dimensões do seu potencial
-              </p>
+          {/* Indicador de Progresso */}
+          <div className="mt-8 max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-slate-400">Progresso Geral</span>
+              <span className="text-sm text-slate-400">
+                {onboardingState.completedSteps.length}/5 completos
+              </span>
             </div>
-            
-            <div className="text-right">
-              <div className="text-sm font-medium text-white">
-                {getCurrentStepIndex() + 1} de {TOTAL_STEPS} etapas
-              </div>
-              <div className="text-xs text-slate-300">
-                {getProgressPercentage()}% concluído
-              </div>
+            <div className="w-full bg-slate-800 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(onboardingState.completedSteps.length / 5) * 100}%` }}
+              ></div>
             </div>
-          </div>
-
-          {/* Barra de Progresso Geral */}
-          <div className="w-full bg-slate-700/50 rounded-full h-3 mb-6">
-            <div 
-              className="h-3 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-400 transition-all duration-500 ease-out"
-              style={{ width: `${getProgressPercentage()}%` }}
-            />
-          </div>
-
-          {/* Steps Navigator */}
-          <div className="flex items-center justify-between">
-            {STEPS_CONFIG.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = step.id === onboardingState.currentStep;
-              const isCompleted = isStepCompleted(step.id);
-              const isPsychological = step.id === 'psychological';
-              
-              return (
-                <div key={step.id} className="flex items-center">
-                  <div className="flex flex-col items-center">
-                    <div 
-                      className={`p-3 rounded-full transition-all duration-300 ${
-                        isActive 
-                          ? isPsychological 
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white scale-110 shadow-lg shadow-purple-500/50'
-                            : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white scale-110 shadow-lg'
-                          : isCompleted
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-600 text-slate-300'
-                      }`}
-                    >
-                      {isCompleted && !isActive ? (
-                        <CheckCircle className="w-5 h-5" />
-                      ) : (
-                        <Icon className="w-5 h-5" />
-                      )}
-                    </div>
-                    
-                    <div className="mt-2 text-center">
-                      <div className={`text-xs font-medium ${
-                        isActive ? 'text-white' : isCompleted ? 'text-emerald-400' : 'text-slate-400'
-                      }`}>
-                        {step.title}
-                      </div>
-                      {isPsychological && (
-                        <div className="text-xs text-purple-300 font-medium">
-                          🌟 Revolucionário
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {index < STEPS_CONFIG.length - 1 && (
-                    <div className={`w-12 h-1 mx-2 rounded-full transition-all duration-300 ${
-                      isCompleted ? 'bg-emerald-500' : 'bg-slate-600'
-                    }`} />
-                  )}
-                </div>
-              );
-            })}
           </div>
         </div>
-      </div>
 
-      {/* ========================================================================
-          CONTEÚDO PRINCIPAL DOS STEPS
-      ======================================================================== */}
-      <div className="max-w-6xl mx-auto p-6">
-        
-        {/* Mensagem de Erro */}
-        {onboardingState.error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-            <p className="text-red-400 text-center">{onboardingState.error}</p>
-          </div>
-        )}
-
-        {/* ====================================================================
-            STEP: DADOS PESSOAIS (Placeholder por enquanto)
-        ==================================================================== */}
+        {/* STEP: DADOS PESSOAIS */}
         {onboardingState.currentStep === 'personal' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8 text-center">
-              <User className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+              <User className="w-16 h-16 text-purple-400 mx-auto mb-4" />
               <h2 className="text-3xl font-bold text-white mb-4">Dados Pessoais</h2>
               <p className="text-slate-300 mb-8">
-                Por enquanto, vamos direto para os dados de nascimento para acelerar o desenvolvimento.
+                Vamos começar conhecendo você melhor
               </p>
-              <button
-                onClick={() => goToStep('birth')}
-                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all"
-              >
-                Continuar para Dados de Nascimento
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
+              
+              {/* Formulário Pessoal Simplificado */}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-slate-300 text-sm font-medium mb-2">Nome Completo</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Seu nome completo"
+                    onBlur={(e) => {
+                      if (e.target.value) {
+                        handlePersonalComplete({
+                          fullName: e.target.value,
+                          email: user?.email || '',
+                          birthDate: new Date().toISOString().split('T')[0]
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* ====================================================================
-            STEP: DADOS DE NASCIMENTO
-        ==================================================================== */}
+        {/* STEP: DADOS DE NASCIMENTO */}
         {onboardingState.currentStep === 'birth' && (
           <BirthDataForm
-            onComplete={handleBirthDataComplete}
+            onComplete={handleBirthComplete}
             onBack={goToPreviousStep}
             initialData={onboardingState.birthData}
           />
         )}
 
-        {/* ====================================================================
-            STEP: AVALIAÇÃO BIOHACKING
-        ==================================================================== */}
+        {/* STEP: BIOHACKING */}
         {onboardingState.currentStep === 'biohacking' && (
           <BiohackingForm
             onComplete={handleBiohackingComplete}
@@ -643,69 +420,45 @@ const OnboardingPage: React.FC = () => {
           />
         )}
 
-        {/* ====================================================================
-            STEP: AVALIAÇÃO PSICOLÓGICA REVOLUCIONÁRIA ✨
-        ==================================================================== */}
+        {/* STEP: PSICOLÓGICO */}
         {onboardingState.currentStep === 'psychological' && (
-          <div className="space-y-8">
-            
-            {/* Header Revolucionário */}
-            <div className="text-center py-8">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 shadow-2xl shadow-purple-500/50">
-                  <Brain className="w-12 h-12 text-white" />
-                </div>
-                <div className="text-left">
-                  <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
-                    Avaliação Psicológica Revolucionária
-                  </h2>
-                  <p className="text-slate-300 text-lg">
-                    104 questões científicas • Primeira plataforma do mundo a integrar Big Five + MTC + Yin/Yang
-                  </p>
-                </div>
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8 text-center">
+              <Brain className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold text-white mb-4">Perfil Psicológico</h2>
+              <p className="text-slate-300 mb-8">
+                A avaliação psicológica será implementada em breve. Incluirá questionários detalhados sobre 
+                personalidade, comportamento e padrões cognitivos.
+              </p>
+              <div className="space-y-4">
+                <button
+                  onClick={goToPreviousStep}
+                  className="w-full px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/5 transition-colors"
+                >
+                  Voltar para Biohacking
+                </button>
+                <button
+                  onClick={() => handlePsychologicalComplete({
+                    bigFive: { openness: 0, conscientiousness: 0, extraversion: 0, agreeableness: 0, neuroticism: 0 },
+                    disc: { dominance: 0, influence: 0, steadiness: 0, compliance: 0 },
+                    vark: { visual: 0, auditory: 0, reading: 0, kinesthetic: 0, dominant: 'visual' },
+                    yinyang: { yin: 0, yang: 0, balance: 'balanced' },
+                    mtc: { wood: 0, fire: 0, earth: 0, metal: 0, water: 0, dominantElement: 'wood' },
+                    completionDate: new Date().toISOString(),
+                    totalQuestions: 104,
+                    completedQuestions: 0,
+                    completionPercentage: 0
+                  })}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all"
+                >
+                  Pular por Enquanto e Continuar
+                </button>
               </div>
-              
-              {/* Badge Revolucionário */}
-              <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-full mb-6">
-                <Star className="w-5 h-5 text-purple-400" />
-                <span className="text-purple-300 font-medium">Inovação Mundial Exclusiva</span>
-                <Star className="w-5 h-5 text-pink-400" />
-              </div>
-
-              {/* Informações da Avaliação */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mb-8">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <Target className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <h3 className="text-white font-medium mb-1">Big Five + DISC + VARK</h3>
-                  <p className="text-slate-400 text-sm">Psicologia científica ocidental validada</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <div className="text-2xl mx-auto mb-2">☯️</div>
-                  <h3 className="text-white font-medium mb-1">Yin/Yang Energético</h3>
-                  <p className="text-slate-400 text-sm">Polaridade energética única no mundo</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <Zap className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                  <h3 className="text-white font-medium mb-1">MTC 5 Elementos</h3>
-                  <p className="text-slate-400 text-sm">Correlação emoção-órgão revolucionária</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Componente de Avaliação Psicológica */}
-            <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden">
-              <PsychologicalForm
-                onComplete={handlePsychologicalComplete}
-                onBack={goToPreviousStep}
-                initialData={psychologicalForm.formState.data}
-              />
             </div>
           </div>
         )}
 
-        {/* ====================================================================
-            STEP: PERFIL COGNITIVO (Placeholder)
-        ==================================================================== */}
+        {/* STEP: COGNITIVO */}
         {onboardingState.currentStep === 'cognitive' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8 text-center">
@@ -732,20 +485,12 @@ const OnboardingPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* ====================================================================
-            CONTINUA NA PARTE 4/4 - STEP FINAL E EXPORT
-        ==================================================================== */}
-
-        // src/pages/onboarding.tsx - PARTE 4/4
+       // src/pages/onboarding.tsx - PARTE 4/4
 // ============================================================================
 // STEP FINAL E EXPORT
 // ============================================================================
-// (Cole esta parte após a PARTE 3/4)
 
-        {/* ====================================================================
-            STEP: ONBOARDING COMPLETO
-        ==================================================================== */}
+        {/* STEP: ONBOARDING COMPLETO */}
         {onboardingState.currentStep === 'complete' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-12 text-center">
@@ -763,130 +508,82 @@ const OnboardingPage: React.FC = () => {
                   Agora você pode acessar suas análises personalizadas e seu plano de desenvolvimento único.
                 </p>
               </div>
-
-              {/* Resumo dos Dados Coletados */}
-              <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-2xl p-8 mb-8">
-                <h3 className="text-2xl font-bold text-white mb-6">Dados Coletados com Sucesso:</h3>
+              
+              {/* Cards de Análises Disponíveis */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Star className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-white font-semibold mb-2">Tradições Ancestrais</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Análise astrológica ocidental, chinesa e numerologia para descobrir seu propósito cósmico
+                  </p>
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Dados de Nascimento */}
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="flex items-center">
-                      <Calendar className="w-6 h-6 text-blue-400 mr-3" />
-                      <div className="text-left">
-                        <span className="text-white font-medium">Dados de Nascimento</span>
-                        <p className="text-xs text-slate-400">Tradições Ancestrais</p>
-                      </div>
-                    </div>
-                    {isStepCompleted('birth') && (
-                      <CheckCircle className="w-6 h-6 text-emerald-400" />
-                    )}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Activity className="w-6 h-6 text-white" />
                   </div>
-
-                  {/* Avaliação Biohacking */}
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="flex items-center">
-                      <Activity className="w-6 h-6 text-green-400 mr-3" />
-                      <div className="text-left">
-                        <span className="text-white font-medium">Avaliação Biohacking</span>
-                        <p className="text-xs text-slate-400">Otimização Corporal</p>
-                      </div>
-                    </div>
-                    {isStepCompleted('biohacking') && (
-                      <CheckCircle className="w-6 h-6 text-emerald-400" />
-                    )}
+                  <h3 className="text-white font-semibold mb-2">Biohacking Avançado</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Protocolos personalizados de otimização física baseados na medicina funcional
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-colors">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <Brain className="w-6 h-6 text-white" />
                   </div>
-
-                  {/* Avaliação Psicológica ✨ */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-400/30">
-                    <div className="flex items-center">
-                      <Brain className="w-6 h-6 text-purple-400 mr-3" />
-                      <div className="text-left">
-                        <span className="text-white font-medium">Avaliação Psicológica</span>
-                        <p className="text-xs text-purple-300">🌟 Revolucionário - 104 questões</p>
-                      </div>
-                    </div>
-                    {isStepCompleted('psychological') && (
-                      <CheckCircle className="w-6 h-6 text-emerald-400" />
-                    )}
-                  </div>
-
-                  {/* Perfil Cognitivo */}
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="flex items-center">
-                      <Zap className="w-6 h-6 text-indigo-400 mr-3" />
-                      <div className="text-left">
-                        <span className="text-white font-medium">Perfil Cognitivo</span>
-                        <p className="text-xs text-slate-400">Aprendizado & Foco</p>
-                      </div>
-                    </div>
-                    {isStepCompleted('cognitive') && (
-                      <CheckCircle className="w-6 h-6 text-emerald-400" />
-                    )}
-                  </div>
-
-                  {/* Estatísticas */}
-                  <div className="md:col-span-2 lg:col-span-2 flex items-center justify-center p-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 rounded-xl border border-emerald-400/30">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-emerald-400 mb-1">
-                        {onboardingState.psychologicalData?.totalQuestions || 104}+
-                      </div>
-                      <div className="text-white font-medium">Questões Respondidas</div>
-                      <div className="text-xs text-emerald-300">
-                        Primeira avaliação integrada do mundo
-                      </div>
-                    </div>
-                  </div>
+                  <h3 className="text-white font-semibold mb-2">Perfil Psicológico</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Mapeamento científico completo da personalidade e padrões cognitivos
+                  </p>
                 </div>
               </div>
 
-              {/* Destaque da Revolução */}
-              {isStepCompleted('psychological') && onboardingState.psychologicalData && (
-                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-400/20 rounded-2xl p-6 mb-8">
-                  <h4 className="text-xl font-bold text-purple-300 mb-4">
-                    🌟 Você fez história! Primeira pessoa a completar nossa revolução psicológica integrada!
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-blue-300">Big Five</div>
-                      <div className="text-slate-400">5 dimensões</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-orange-300">DISC + VARK</div>
-                      <div className="text-slate-400">Comportamento</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-purple-300">☯️ Yin/Yang</div>
-                      <div className="text-slate-400">Energia</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-green-300">MTC</div>
-                      <div className="text-slate-400">5 Elementos</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-emerald-300">
-                        {onboardingState.psychologicalData.completionPercentage}%
-                      </div>
-                      <div className="text-slate-400">Completo</div>
-                    </div>
-                  </div>
+              {/* Estatísticas da Jornada */}
+              <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-emerald-400 mb-1">100+</div>
+                  <div className="text-sm text-slate-400">Questões Respondidas</div>
                 </div>
-              )}
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-400 mb-1">3</div>
+                  <div className="text-sm text-slate-400">Tradições Integradas</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-400 mb-1">5</div>
+                  <div className="text-sm text-slate-400">Dimensões Avaliadas</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-400 mb-1">∞</div>
+                  <div className="text-sm text-slate-400">Possibilidades</div>
+                </div>
+              </div>
 
-              {/* Call to Action */}
-              <div className="space-y-4">
+              {/* Botão Principal */}
+              <div className="mt-12">
                 <button
-                  onClick={handleOnboardingComplete}
-                  className="inline-flex items-center px-12 py-4 bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 text-white text-xl font-medium rounded-2xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all transform hover:scale-105"
+                  onClick={() => router.push('/results')}
+                  className="inline-flex items-center px-10 py-4 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 text-white rounded-2xl hover:shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 text-lg font-semibold group"
                 >
-                  <Target className="w-6 h-6 mr-3" />
-                  Acessar Meu Dashboard Revolucionário
-                  <ArrowRight className="w-6 h-6 ml-3" />
+                  <span className="mr-3">🚀</span>
+                  Ver Meus Resultados
+                  <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform" />
                 </button>
-                
-                <p className="text-slate-400 text-sm">
-                  Suas análises personalizadas, insights únicos e plano de desenvolvimento estão te esperando!
-                </p>
+              </div>
+
+              {/* Mensagens Motivacionais */}
+              <div className="mt-12 space-y-4">
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-6">
+                  <p className="text-slate-300 text-lg font-medium">
+                    🌟 "O autoconhecimento é o primeiro passo para a transformação"
+                  </p>
+                  <p className="text-slate-400 text-sm mt-2">
+                    Você agora possui insights únicos que 99% das pessoas nunca terão acesso
+                  </p>
+                </div>
               </div>
 
               {/* Footer com Agradecimento */}
@@ -901,6 +598,22 @@ const OnboardingPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Error State */}
+        {onboardingState.error && (
+          <div className="max-w-2xl mx-auto mt-8">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
+              <p className="text-red-400 font-medium mb-2">Ops! Algo deu errado</p>
+              <p className="text-red-300 text-sm">{onboardingState.error}</p>
+              <button
+                onClick={() => setOnboardingState(prev => ({ ...prev, error: undefined }))}
+                className="mt-4 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors"
+              >
+                Tentar Novamente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -911,42 +624,3 @@ const OnboardingPage: React.FC = () => {
 // ============================================================================
 
 export default OnboardingPage;
-
-// ============================================================================
-// INSTRUÇÕES DE IMPLEMENTAÇÃO
-// ============================================================================
-
-/*
-COMO IMPLEMENTAR:
-
-1. COPIAR ARQUIVOS PRIMEIRO:
-   - psychologicalService.ts → src/services/
-   - usePsychologicalForm.ts (3 partes) → src/hooks/
-   - 8 componentes steps → src/components/onboarding/
-
-2. SUBSTITUIR ARQUIVO:
-   - Fazer backup do onboarding.tsx atual
-   - Substituir pelo conteúdo das 4 partes (na ordem)
-
-3. AJUSTAR IMPORTS:
-   - Verificar se todos os imports estão corretos
-   - Verificar se BiohackingData type está importado corretamente
-
-4. TESTAR:
-   - Fluxo birth → biohacking → psychological → cognitive → complete
-   - Auto-save dos dados psicológicos
-   - Navegação entre steps
-
-5. FUNCIONALIDADES IMPLEMENTADAS:
-   ✅ Fluxo completo de onboarding
-   ✅ Step psicológico revolucionário integrado
-   ✅ 104 questões científicas
-   ✅ Auto-save no Supabase (cognitive_data)
-   ✅ Progress tracking visual
-   ✅ Estados de loading/error
-   ✅ Interface responsiva e profissional
-   ✅ Integração com hook usePsychologicalForm
-   ✅ Finalização com scores calculados
-
-RESULTADO: Sistema de onboarding mais avançado do mundo! 🌟
-*/

@@ -27,7 +27,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       if (error) {
         setError(error.message)
       } else if (data.user) {
-        router.push('/onboarding')
+        router.push('/analysis')
       }
     } catch (err) {
       setError('Erro inesperado. Tente novamente.')
@@ -131,7 +131,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <p>
             Não tem conta?{' '}
             <button
-              onClick={() => router.push('/auth/signup')}
+              onClick={() => router.push('/analysis')}
               className="text-purple-600 hover:underline"
             >
               Criar conta
@@ -141,7 +141,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <p>
             Já tem conta?{' '}
             <button
-              onClick={() => router.push('/auth/login')}
+              onClick={() => router.push('/analysis')}
               className="text-purple-600 hover:underline"
             >
               Fazer login

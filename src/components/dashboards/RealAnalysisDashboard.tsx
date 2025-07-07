@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useUserDataForAnalysis } from '../../services/dataMapperService';
+// src/components/dashboards/RealAnalysisDashboard.tsx
 
-// Importar os componentes de análise que criamos (assumindo que estão disponíveis)
-// import WesternAstrologyAnalysis from '../components/analysis/WesternAstrologyAnalysis';
+import React, { useState } from 'react';
+// CORREÇÃO: Import como default export
+import useUserDataForAnalysis from '../../services/dataMapperService';
 
 const RealAnalysisDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -64,421 +64,270 @@ const RealAnalysisDashboard: React.FC = () => {
       textAlign: 'center' as const,
       color: '#dc2626'
     },
-    tabContainer: {
+    analysisGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gap: '24px',
       marginBottom: '32px'
     },
-    tabList: {
+    analysisCard: {
+      padding: '24px',
+      backgroundColor: '#ffffff',
+      border: '1px solid #e5e7eb',
+      borderRadius: '16px',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      transition: 'all 0.2s ease-in-out'
+    },
+    cardHeader: {
       display: 'flex',
-      justifyContent: 'center' as const,
-      marginBottom: '24px',
-      borderBottom: '2px solid #e5e7eb',
-      gap: '8px'
+      alignItems: 'center',
+      marginBottom: '16px'
     },
-    tab: {
-      padding: '12px 24px',
-      cursor: 'pointer',
-      borderRadius: '8px 8px 0 0',
-      border: 'none',
-      backgroundColor: 'transparent',
-      fontSize: '16px',
+    cardIcon: {
+      width: '48px',
+      height: '48px',
+      borderRadius: '12px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: '16px',
+      fontSize: '24px'
+    },
+    cardTitle: {
+      fontSize: '20px',
+      fontWeight: '600',
+      color: '#1f2937',
+      marginBottom: '4px'
+    },
+    cardSubtitle: {
+      fontSize: '14px',
+      color: '#6b7280'
+    },
+    statusBadge: {
+      display: 'inline-block',
+      padding: '4px 12px',
+      borderRadius: '20px',
+      fontSize: '12px',
       fontWeight: '500',
-      transition: 'all 0.2s ease'
+      marginBottom: '12px'
     },
-    tabActive: {
+    availableBadge: {
+      backgroundColor: '#d1fae5',
+      color: '#065f46'
+    },
+    unavailableBadge: {
+      backgroundColor: '#fee2e2',
+      color: '#991b1b'
+    },
+    cardDescription: {
+      color: '#6b7280',
+      lineHeight: '1.5',
+      marginBottom: '16px'
+    },
+    cardButton: {
+      width: '100%',
+      padding: '12px 16px',
+      borderRadius: '8px',
+      border: 'none',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease-in-out'
+    },
+    enabledButton: {
       backgroundColor: '#3b82f6',
       color: 'white'
     },
-    tabInactive: {
-      backgroundColor: '#f9fafb',
-      color: '#6b7280'
-    },
-    tabDisabled: {
+    disabledButton: {
       backgroundColor: '#f3f4f6',
       color: '#9ca3af',
-      cursor: 'not-allowed',
-      opacity: 0.6
-    },
-    availabilityGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-      gap: '16px',
-      marginBottom: '24px'
-    },
-    availabilityCard: {
-      padding: '20px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '8px',
-      backgroundColor: 'white'
-    },
-    availabilityCardAvailable: {
-      borderColor: '#10b981',
-      backgroundColor: '#f0fdf4'
-    },
-    availabilityCardUnavailable: {
-      borderColor: '#f59e0b',
-      backgroundColor: '#fffbeb'
-    },
-    missingDataContainer: {
-      padding: '40px',
-      backgroundColor: '#fef3c7',
-      border: '1px solid #fcd34d',
-      borderRadius: '12px',
-      textAlign: 'center' as const
-    },
-    analysisContent: {
-      backgroundColor: 'white',
-      border: '1px solid #e5e7eb',
-      borderRadius: '12px',
-      padding: '24px',
-      minHeight: '400px'
-    },
-    placeholderContent: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      padding: '60px 20px',
-      textAlign: 'center' as const,
-      backgroundColor: '#f9fafb',
-      borderRadius: '8px',
-      border: '2px dashed #d1d5db'
+      cursor: 'not-allowed'
     }
   };
 
-  // 📊 CONFIGURAÇÃO DAS ABAS
-  const tabs = [
-    { 
-      id: 'western-astrology',
-      label: '🌟 Horóscopo Ocidental',
-      available: availability?.westernAstrology?.available || false
+  // 🎨 DADOS DAS ANÁLISES
+  const analysisCards = [
+    {
+      id: 'traditions',
+      title: 'Tradições Ancestrais',
+      subtitle: 'Astrologia + Numerologia + Medicina Chinesa',
+      icon: '🌟',
+      iconBg: '#fef3c7',
+      description: 'Análise completa baseada em astrologia ocidental, chinesa e numerologia para descobrir seu propósito de vida.',
+      available: availability.traditions,
+      requiredData: 'Data, hora e local de nascimento'
     },
-    { 
-      id: 'chinese-astrology',
-      label: '🐉 Astrologia Chinesa',
-      available: availability?.chineseAstrology?.available || false
+    {
+      id: 'biohacking',
+      title: 'Biohacking Personalizado',
+      subtitle: 'Otimização Corporal + Mental',
+      icon: '💪',
+      iconBg: '#dbeafe',
+      description: 'Protocolos personalizados de sono, alimentação, exercício e suplementação baseados no seu perfil.',
+      available: availability.biohacking,
+      requiredData: 'Dados de estilo de vida e saúde'
     },
-    { 
-      id: 'numerology',
-      label: '🔢 Numerologia',
-      available: availability?.numerology?.available || false
+    {
+      id: 'psychological',
+      title: 'Perfil Psicológico',
+      subtitle: 'Big Five + DISC + VARK + MTC',
+      icon: '🧠',
+      iconBg: '#ede9fe',
+      description: '104 questões científicas para mapear sua personalidade e estilo cognitivo completo.',
+      available: availability.psychological,
+      requiredData: 'Questionário psicológico completo'
+    },
+    {
+      id: 'cognitive',
+      title: 'Análise Cognitiva',
+      subtitle: 'Inteligências + Processamento + Criatividade',
+      icon: '⚡',
+      iconBg: '#ecfdf5',
+      description: 'Avaliação detalhada das suas capacidades cognitivas e estratégias de aprendizagem.',
+      available: availability.cognitive,
+      requiredData: 'Testes cognitivos e de inteligência'
     }
   ];
 
-  // ⏳ ESTADO DE CARREGAMENTO
+  // 🔄 ESTADOS DE CARREGAMENTO E ERRO
   if (loading) {
     return (
       <div style={styles.container}>
-        <style>
-          {`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}
-        </style>
         <div style={styles.loadingContainer}>
           <div style={styles.spinner}></div>
-          <h3 style={{color: '#3b82f6', marginBottom: '8px'}}>
-            🔍 Carregando seus dados...
-          </h3>
-          <p style={{color: '#6b7280', fontSize: '14px'}}>
-            Buscando informações do onboarding no Supabase...
-          </p>
+          <h3 style={{ color: '#374151', marginBottom: '8px' }}>Carregando suas análises...</h3>
+          <p style={{ color: '#6b7280' }}>Buscando seus dados para gerar insights personalizados</p>
         </div>
       </div>
     );
   }
 
-  // ❌ ESTADO DE ERRO
   if (error) {
     return (
       <div style={styles.container}>
         <div style={styles.errorContainer}>
-          <h3 style={{marginBottom: '16px', fontSize: '20px'}}>
-            ⚠️ Dados Não Encontrados
-          </h3>
-          <p style={{marginBottom: '20px'}}>{error}</p>
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#fbbf24',
-            color: '#92400e',
-            borderRadius: '8px',
-            fontSize: '14px'
-          }}>
-            💡 <strong>Solução:</strong> Complete o formulário de onboarding primeiro para 
-            ter acesso às suas análises personalizadas.
-          </div>
+          <h3 style={{ marginBottom: '8px' }}>Erro ao carregar dados</h3>
+          <p style={{ marginBottom: '16px' }}>{error}</p>
           <button 
-            onClick={() => window.location.href = '/onboarding'}
+            onClick={() => window.location.reload()}
             style={{
-              marginTop: '20px',
-              padding: '12px 24px',
-              backgroundColor: '#3b82f6',
+              padding: '8px 16px',
+              backgroundColor: '#dc2626',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
+              borderRadius: '6px',
               cursor: 'pointer'
             }}
           >
-            🚀 Ir para Onboarding
+            Tentar Novamente
           </button>
         </div>
       </div>
     );
   }
-
-  // ❌ SEM DADOS DO USUÁRIO
-  if (!userData) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.missingDataContainer}>
-          <h3 style={{color: '#d97706', marginBottom: '16px'}}>
-            📋 Complete seu Perfil
-          </h3>
-          <p style={{color: '#92400e', marginBottom: '20px'}}>
-            Para gerar suas análises ancestrais personalizadas, precisamos dos seus dados de nascimento.
-          </p>
-          <button 
-            onClick={() => window.location.href = '/onboarding'}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            📝 Completar Onboarding
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 🎯 COMPONENTE DE DISPONIBILIDADE DE ANÁLISES
-  const AnalysisAvailabilityGrid = () => (
-    <div style={styles.availabilityGrid}>
-      {Object.entries(availability || {}).map(([key, value]: [string, any]) => {
-        const isAvailable = value.available;
-        const traditionNames = {
-          westernAstrology: 'Horóscopo Ocidental',
-          chineseAstrology: 'Astrologia Chinesa', 
-          numerology: 'Numerologia'
-        };
-        
-        const traditionEmojis = {
-          westernAstrology: '🌟',
-          chineseAstrology: '🐉',
-          numerology: '🔢'
-        };
-        
-        return (
-          <div 
-            key={key}
-            style={{
-              ...styles.availabilityCard,
-              ...(isAvailable ? styles.availabilityCardAvailable : styles.availabilityCardUnavailable)
-            }}
-          >
-            <div style={{display: 'flex', alignItems: 'center' as const, marginBottom: '12px'}}>
-              <span style={{fontSize: '24px', marginRight: '8px'}}>
-                {traditionEmojis[key as keyof typeof traditionEmojis]}
-              </span>
-              <h4 style={{
-                margin: 0,
-                color: isAvailable ? '#065f46' : '#92400e',
-                fontSize: '16px',
-                fontWeight: '600'
-              }}>
-                {traditionNames[key as keyof typeof traditionNames]}
-              </h4>
-            </div>
-            
-            <div style={{marginBottom: '8px'}}>
-              <span style={{
-                padding: '4px 8px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: '600',
-                backgroundColor: isAvailable ? '#10b981' : '#f59e0b',
-                color: 'white'
-              }}>
-                {isAvailable ? '✅ Disponível' : '⚠️ Dados Insuficientes'}
-              </span>
-            </div>
-            
-            {value.missing && value.missing.length > 0 && (
-              <div style={{fontSize: '12px', color: '#92400e'}}>
-                <strong>Faltam:</strong> {value.missing.join(', ')}
-              </div>
-            )}
-            
-            {value.warnings && value.warnings.length > 0 && (
-              <div style={{fontSize: '12px', color: '#d97706', marginTop: '4px'}}>
-                <strong>Avisos:</strong> {value.warnings.join('; ')}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // 🎨 COMPONENTE PLACEHOLDER PARA ANÁLISE
-  const AnalysisPlaceholder: React.FC<{ type: string; available: boolean }> = ({ type, available }) => {
-    if (!available) {
-      return (
-        <div style={styles.placeholderContent}>
-          <div style={{fontSize: '48px', marginBottom: '16px'}}>⚠️</div>
-          <h3 style={{color: '#f59e0b', marginBottom: '12px'}}>
-            Dados Insuficientes para {type}
-          </h3>
-          <p style={{color: '#92400e', maxWidth: '400px', lineHeight: '1.5'}}>
-            Complete o onboarding com todas as informações necessárias para 
-            desbloquear esta análise.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div style={styles.placeholderContent}>
-        <div style={{fontSize: '48px', marginBottom: '16px'}}>🚀</div>
-        <h3 style={{color: '#3b82f6', marginBottom: '12px'}}>
-          {type} com Dados Reais!
-        </h3>
-        <p style={{color: '#6b7280', maxWidth: '500px', lineHeight: '1.5', marginBottom: '20px'}}>
-          Esta análise está pronta para ser gerada com seus dados reais do Supabase:
-        </p>
-        
-        <div style={{
-          textAlign: 'left' as const,
-          backgroundColor: '#f8fafc',
-          padding: '16px',
-          borderRadius: '8px',
-          border: '1px solid #e2e8f0',
-          maxWidth: '400px'
-        }}>
-          <h4 style={{color: '#1e293b', marginBottom: '8px', fontSize: '14px'}}>
-            📊 Dados Detectados:
-          </h4>
-          <ul style={{margin: 0, paddingLeft: '16px', fontSize: '12px', color: '#475569'}}>
-            <li><strong>Nome:</strong> {userData.name}</li>
-            <li><strong>Data:</strong> {userData.birthDate}</li>
-            {userData.birthTime && <li><strong>Horário:</strong> {userData.birthTime}</li>}
-            {userData.birthPlace && <li><strong>Local:</strong> {userData.birthPlace.name}</li>}
-          </ul>
-        </div>
-
-        <div style={{
-          marginTop: '20px',
-          padding: '12px 24px',
-          backgroundColor: '#10b981',
-          color: '#064e3b',
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontWeight: '600'
-        }}>
-          ✅ Integração com componente de análise aqui
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div style={styles.container}>
-      {/* HEADER */}
+      {/* Header */}
       <div style={styles.header}>
-        <h1 style={styles.title}>
-          🎯 Suas Análises Personalizadas
-        </h1>
+        <h1 style={styles.title}>Suas Análises Personalizadas</h1>
         <p style={styles.subtitle}>
-          Análises baseadas nos seus dados reais coletados no onboarding
+          Explore insights únicos baseados nos seus dados pessoais, de nascimento e perfil psicológico.
+          Cada análise revela aspectos diferentes da sua jornada de autoconhecimento.
         </p>
       </div>
 
-      {/* INFORMAÇÕES DO USUÁRIO */}
-      <div style={styles.userCard}>
-        <h4 style={{margin: '0 0 8px 0', color: '#0369a1'}}>
-          👤 Analisando perfil de: <strong>{userData.name}</strong>
-        </h4>
-        <div style={{fontSize: '14px', color: '#0369a1'}}>
-          <span><strong>📅 Data de nascimento:</strong> {userData.birthDate}</span>
-          {userData.birthTime && (
-            <span style={{marginLeft: '16px'}}>
-              <strong>⏰ Horário:</strong> {userData.birthTime}
-            </span>
-          )}
-          {userData.birthPlace && (
-            <span style={{marginLeft: '16px'}}>
-              <strong>📍 Local:</strong> {userData.birthPlace.name}
-            </span>
-          )}
+      {/* Card do Usuário */}
+      {userData && (
+        <div style={styles.userCard}>
+          <h3 style={{ color: '#1f2937', marginBottom: '8px' }}>
+            👋 Olá, {userData.personal?.name || 'Explorador'}!
+          </h3>
+          <p style={{ color: '#6b7280', margin: 0 }}>
+            {userData.birth?.date 
+              ? `Nascido em ${userData.birth.date} em ${userData.birth.place || 'local não especificado'}`
+              : 'Complete seus dados de nascimento para unlock mais análises'
+            }
+          </p>
         </div>
-      </div>
+      )}
 
-      {/* GRID DE DISPONIBILIDADE */}
-      <AnalysisAvailabilityGrid />
-
-      {/* TABS DE ANÁLISES */}
-      <div style={styles.tabContainer}>
-        <div style={styles.tabList}>
-          {tabs.map((tab, index) => {
-            const isActive = activeTab === index;
-            const isAvailable = tab.available;
-            
-            return (
-              <button
-                key={index}
-                onClick={() => isAvailable && setActiveTab(index)}
+      {/* Grid de Análises */}
+      <div style={styles.analysisGrid}>
+        {analysisCards.map((card) => (
+          <div 
+            key={card.id} 
+            style={{
+              ...styles.analysisCard,
+              ...(card.available ? {} : { opacity: 0.7 })
+            }}
+          >
+            {/* Header do Card */}
+            <div style={styles.cardHeader}>
+              <div 
                 style={{
-                  ...styles.tab,
-                  ...(isActive ? styles.tabActive : 
-                      isAvailable ? styles.tabInactive : 
-                      styles.tabDisabled)
+                  ...styles.cardIcon,
+                  backgroundColor: card.iconBg
                 }}
-                disabled={!isAvailable}
               >
-                {tab.label}
-                {!isAvailable && (
-                  <span style={{marginLeft: '8px'}}>🔒</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                {card.icon}
+              </div>
+              <div>
+                <h3 style={styles.cardTitle}>{card.title}</h3>
+                <p style={styles.cardSubtitle}>{card.subtitle}</p>
+              </div>
+            </div>
 
-        {/* CONTEÚDO DA TAB ATIVA */}
-        <div style={styles.analysisContent}>
-          <AnalysisPlaceholder 
-            type={tabs[activeTab].label} 
-            available={tabs[activeTab].available}
-          />
-        </div>
+            {/* Status Badge */}
+            <span 
+              style={{
+                ...styles.statusBadge,
+                ...(card.available ? styles.availableBadge : styles.unavailableBadge)
+              }}
+            >
+              {card.available ? 'Disponível' : 'Dados Insuficientes'}
+            </span>
+
+            {/* Descrição */}
+            <p style={styles.cardDescription}>{card.description}</p>
+
+            {!card.available && (
+              <p style={{ 
+                fontSize: '12px', 
+                color: '#f59e0b', 
+                marginBottom: '16px',
+                fontStyle: 'italic'
+              }}>
+                Necessário: {card.requiredData}
+              </p>
+            )}
+
+            {/* Botão de Ação */}
+            <button 
+              style={{
+                ...styles.cardButton,
+                ...(card.available ? styles.enabledButton : styles.disabledButton)
+              }}
+              disabled={!card.available}
+              onClick={() => {
+                if (card.available) {
+                  console.log(`Abrindo análise: ${card.id}`);
+                  // Aqui você pode navegar para a página específica da análise
+                }
+              }}
+            >
+              {card.available ? 'Ver Análise' : 'Completar Dados'}
+            </button>
+          </div>
+        ))}
       </div>
 
-      {/* FOOTER DE INTEGRAÇÃO */}
-      <div style={{
-        marginTop: '32px',
-        padding: '20px',
-        backgroundColor: '#f0f9ff',
-        border: '1px solid #bae6fd',
-        borderRadius: '12px',
-        textAlign: 'center' as const
-      }}>
-        <h4 style={{color: '#0369a1', marginBottom: '8px'}}>
-          🔗 Integração Supabase → Análises Funcionando!
-        </h4>
-        <p style={{color: '#0369a1', fontSize: '14px', margin: 0}}>
-          Dados carregados em tempo real do seu onboarding. 
-          Próximo passo: conectar com os componentes de análise visual que criamos.
-        </p>
-      </div>
+      {/* CSS Animation */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

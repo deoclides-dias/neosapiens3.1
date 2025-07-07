@@ -1,93 +1,106 @@
-import { useEffect } from 'react';
-import Head from 'next/head';
-import dynamic from 'next/dynamic';
+// src/pages/index.tsx - BÁSICO PARA TESTAR
+import React from 'react';
+import { useRouter } from 'next/router';
 
-import Layout from '../components/layout/Layout';
-import HeroSection from '../components/hero/HeroSection';
-import CrisisSection from '../components/crisis/CrisisSection';
-import PillarsSection from '../components/pillars/PillarsSection';
-import MethodologySection from '../components/methodology/MethodologySection';
-import JourneySection from '../components/journey/JourneySection';
-import AboutSection from '../components/about/AboutSection';
-import SignupSection from '../components/signup/SignupSection';
-
-// Dynamic imports for performance optimization
-const QuestionnaireSection = dynamic(
-  () => import('../components/questionnaire/QuestionnaireSection'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="py-20 text-center text-gray-500">Carregando questionário...</div>
-    ),
-  }
-);
-
-// New components with dynamic imports for better performance
-const AssessmentSection = dynamic(
-  () => import('../components/assessment/AssessmentSection'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="py-20 text-center text-gray-500">Carregando avaliação...</div>
-    ),
-  }
-);
-
-const FlightPlanSection = dynamic(
-  () => import('../components/flight-plan/FlightPlanSection'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="py-20 text-center text-gray-500">Carregando plano de voo...</div>
-    ),
-  }
-);
-
-export default function Home() {
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = document.querySelectorAll('.animate-on-scroll');
-      sections.forEach(section => {
-        const sectionTop = section.getBoundingClientRect().top;
-        const sectionBottom = section.getBoundingClientRect().bottom;
-        const windowHeight = window.innerHeight;
-        if (sectionTop < windowHeight * 0.75 && sectionBottom > 0) {
-          section.classList.add('visible');
-        }
-      });
-    };
-    handleScroll();
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+const HomePage = () => {
+  const router = useRouter();
 
   return (
-    <>
-      <Head>
-        <title>NeoSapiens | Desperte seu potencial tridimensional</title>
-        <meta name="description" content="NeoSapiens é uma metodologia tridimensional que integra clareza de propósito, vitalidade corporal e maestria mental em um sistema coerente de desenvolvimento." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%3E%3Crect%20width='32'%20height='32'%20fill='white'/%3E%3Ctext%20x='16'%20y='22'%20font-size='24'%20text-anchor='middle'%20fill='%234F46E5'%3E%E2%88%9E%3C/text%3E%3C/svg%3E" />
-        <meta property="og:description" content="Uma metodologia tridimensional que integra propósito, corpo e mente." />
-        <meta property="og:image" content="https://via.placeholder.com/1200x630/4F46E5/FFFFFF/?text=NeoSapiens+OG+Image" />
-        <meta property="og:url" content="https://neosapiens.com.br" />
-        <meta property="og:type" content="website" />
-      </Head>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-6">
+      <div className="max-w-4xl mx-auto text-center">
+        
+        {/* Header */}
+        <div className="mb-12">
+          <h1 className="text-6xl font-bold text-white mb-4">
+            🌟 NeoSapiens
+          </h1>
+          <p className="text-2xl text-purple-200 mb-8">
+            Sua jornada de autodescoberta aguarda
+          </p>
+          <p className="text-lg text-purple-300 max-w-2xl mx-auto">
+            Descubra suas três dimensões através de análises científicas e tradições ancestrais. 
+            Corpo, Mente e Propósito integrados em uma plataforma revolucionária.
+          </p>
+        </div>
 
-      <Layout>
-        <HeroSection />
-        <main>
-          <CrisisSection />
-          <PillarsSection />
-          <MethodologySection />
-          <AssessmentSection /> {/* Nova seção de Avaliação */}
-          <FlightPlanSection /> {/* Nova seção de Plano de Voo */}
-          <JourneySection />
-          <AboutSection />
-          <QuestionnaireSection /> {/* Já existente */}
-          <SignupSection />
-        </main>
-      </Layout>
-    </>
+        {/* Action Buttons */}
+        <div className="space-y-4 mb-12">
+          <button
+            onClick={() => router.push('/auth/login')}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-xl block w-full max-w-md mx-auto"
+          >
+            🚀 Iniciar Jornada
+          </button>
+          
+          <button
+            onClick={() => router.push('/analysis')}
+            className="bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-white/20 transition-all duration-300 border border-white/20 block w-full max-w-md mx-auto"
+          >
+            📊 Hub de Análises
+          </button>
+          
+          <button
+            onClick={() => router.push('/results')}
+            className="bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-white/20 transition-all duration-300 border border-white/20 block w-full max-w-md mx-auto"
+          >
+            📈 Ver Resultados
+          </button>
+          
+          <button
+            onClick={() => router.push('/test-integration')}
+            className="bg-green-600 text-white px-8 py-4 rounded-lg text-xl font-semibold hover:bg-green-700 transition-all duration-300 block w-full max-w-md mx-auto"
+          >
+            🧪 Testar Integração
+          </button>
+        </div>
+
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <div className="text-3xl mb-3">🌟</div>
+            <h3 className="text-xl font-bold text-white mb-2">Tradições Ancestrais</h3>
+            <p className="text-purple-200 text-sm">Astrologia Ocidental, Chinesa e Numerologia</p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <div className="text-3xl mb-3">🧬</div>
+            <h3 className="text-xl font-bold text-white mb-2">Ciência Moderna</h3>
+            <p className="text-purple-200 text-sm">Big Five, Biohacking e Análise Cognitiva</p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <div className="text-3xl mb-3">🎯</div>
+            <h3 className="text-xl font-bold text-white mb-2">Análise Integrada</h3>
+            <p className="text-purple-200 text-sm">Síntese das três dimensões do ser</p>
+          </div>
+        </div>
+
+        {/* Debug Info */}
+        <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+          <h3 className="text-lg font-bold text-white mb-4">🔧 Status do Sistema</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="text-left">
+              <p className="text-green-400">✅ Landing Page: Funcionando</p>
+              <p className="text-green-400">✅ Autenticação: Integrada</p>
+              <p className="text-green-400">✅ Módulos: Implementados</p>
+            </div>
+            <div className="text-left">
+              <p className="text-yellow-400">🔄 Hub Analysis: Novo sistema</p>
+              <p className="text-yellow-400">🔄 Results: Em integração</p>
+              <p className="text-blue-400">🧪 Test Integration: Disponível</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-12 text-center">
+          <p className="text-purple-300 text-sm">
+            🚀 NeoSapiens Platform - Sua evolução começa aqui
+          </p>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default HomePage;

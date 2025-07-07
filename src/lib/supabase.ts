@@ -22,7 +22,7 @@ export const signUp = async (email: string, password: string) => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/onboarding`
+        emailRedirectTo: `${window.location.origin}/analysis`
       }
     })
     
@@ -63,7 +63,7 @@ export const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/onboarding`
+        redirectTo: `${window.location.origin}/analysis`
       }
     })
     
