@@ -1,20 +1,59 @@
-// =============================================================================
-// COGNITIVE ANALYSIS PAGE - IMPORT CORRETO
-// =============================================================================
+// src/pages/analysis/cognitive.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Brain, Zap, Target } from 'lucide-react';
+import { ArrowLeft, Brain, Zap, Target, CheckCircle, Loader } from 'lucide-react';
 import { useRouter } from 'next/router';
-import CognitiveForm from '../../components/forms/CognitiveForm'; // ← CORRETO (PascalCase)
+import CognitiveForm from '../../components/onboarding/CognitiveForm'; // ← IMPORT CORRETO!
 import useAnalysisProgress from '../../hooks/useAnalysisProgress';
 
 const CognitivePage: React.FC = () => {
   const router = useRouter();
-  const { progress } = useAnalysisProgress();
+  const { progress, markAnalysisComplete } = useAnalysisProgress();
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   // Verificar se pode acessar esta análise
   const canAccess = progress.birth.completed && progress.biohacking.completed && progress.psychological.completed;
+
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  const handleCognitiveComplete = async (cognitiveData: any) => {
+    setIsCompleting(true);
+    
+    try {
+      console.log('💾 Salvando dados cognitivos:', cognitiveData);
+      
+      // Salvar no Supabase via hook
+      const success = await markAnalysisComplete('cognitive', cognitiveData);
+      
+      if (success) {
+        setCompleted(true);
+        
+        // Mostrar mensagem de sucesso por 2 segundos
+        setTimeout(() => {
+          router.push('/analysis'); // Voltar para o hub
+        }, 2000);
+      } else {
+        alert('❌ Erro ao salvar dados cognitivos. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Erro ao completar análise cognitiva:', error);
+      alert('❌ Erro inesperado. Tente novamente.');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const handleBack = () => {
+    router.push('/analysis');
+  };
+
+  // ============================================================================
+  // TELA DE ACESSO BLOQUEADO
+  // ============================================================================
 
   if (!canAccess) {
     return (
@@ -59,6 +98,66 @@ const CognitivePage: React.FC = () => {
     );
   }
 
+  // ============================================================================
+  // TELA DE CONCLUSÃO
+  // ============================================================================
+
+  if (completed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-md mx-auto p-8"
+        >
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-4">
+              🎉 Análise Cognitiva Completa!
+            </h1>
+            <p className="text-white/70 mb-6">
+              Seus dados cognitivos foram salvos com sucesso. Redirecionando...
+            </p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto"></div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // TELA DE LOADING
+  // ============================================================================
+
+  if (isCompleting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center max-w-md mx-auto p-8"
+        >
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <Loader className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-spin" />
+            <h1 className="text-2xl font-bold text-white mb-4">
+              💾 Processando Análise Cognitiva
+            </h1>
+            <p className="text-white/70 mb-6">
+              Salvando seus dados e gerando insights personalizados...
+            </p>
+            <div className="w-full bg-white/20 rounded-full h-2">
+              <div className="bg-blue-400 h-2 rounded-full animate-pulse" style={{width: '75%'}}></div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // TELA PRINCIPAL
+  // ============================================================================
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
       {/* HEADER */}
@@ -69,7 +168,7 @@ const CognitivePage: React.FC = () => {
           className="flex items-center justify-between mb-8"
         >
           <button
-            onClick={() => router.push('/analysis')}
+            onClick={handleBack}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -117,10 +216,10 @@ const CognitivePage: React.FC = () => {
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
               <Zap className="w-6 h-6 text-purple-400" />
-              <h3 className="font-semibold text-white">Testes Práticos</h3>
+              <h3 className="font-semibold text-white">Estilos de Aprendizagem</h3>
             </div>
             <p className="text-white/70 text-sm">
-              Mensure suas capacidades através de testes cognitivos interativos
+              Identifique seus métodos de aprendizagem mais eficazes e naturais
             </p>
           </div>
         </motion.div>
@@ -130,9 +229,16 @@ const CognitivePage: React.FC = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
+        transition={{ delay: 0.4 }}
+        className="container mx-auto px-4 pb-8"
       >
-        <CognitiveForm />
+        <div className="bg-white/5 backdrop-blur-lg rounded-3xl border border-white/10 overflow-hidden">
+          <CognitiveForm
+            onComplete={handleCognitiveComplete}
+            onBack={handleBack}
+            initialData={progress.cognitive.data} // Pré-carregar dados se existirem
+          />
+        </div>
       </motion.div>
     </div>
   );

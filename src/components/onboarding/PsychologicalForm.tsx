@@ -1,18 +1,9 @@
-// src/components/onboarding/PsychologicalForm.tsx
-// ============================================================================
-// PSYCHOLOGICAL FORM - ORQUESTRADOR PRINCIPAL LIMPO E FUNCIONAL
-// ============================================================================
+// src/components/onboarding/PsychologicalFormDebug.tsx - VERSÃO COM DEBUG PARA CAÇAR O BUG
 
 import React, { useState, useEffect } from 'react';
-import { 
-  CheckCircle, 
-  Loader,
-  ArrowLeft,
-  ArrowRight,
-  Brain
-} from 'lucide-react';
+import { Brain, ChevronLeft, ChevronRight, Clock, AlertTriangle } from 'lucide-react';
 
-// Imports dos Step components - TODOS OS 8 STEPS FUNCIONAIS
+// Import estático de TODOS os componentes para evitar tree shaking
 import Step1_Openness from './psychological-steps/Step1_Openness';
 import Step2_Conscientiousness from './psychological-steps/Step2_Conscientiousness';
 import Step3_Extraversion from './psychological-steps/Step3_Extraversion';
@@ -22,411 +13,405 @@ import Step6_DiscVark from './psychological-steps/Step6_DiscVark';
 import Step7_MtcWoodFire from './psychological-steps/Step7_MtcWoodFire';
 import Step8_MtcEarthMetalWater from './psychological-steps/Step8_MtcEarthMetalWater';
 
-// ============================================================================
-// INTERFACES
-// ============================================================================
-
 interface PsychologicalFormProps {
-  onComplete: (data: PsychologicalFormData) => Promise<void>;
-  onBack?: () => void;
-  initialData?: Partial<PsychologicalFormData>;
-}
-
-interface PsychologicalFormData {
-  // Big Five (8 questões cada = 40 total)
-  openness: number[];          // Step 1 - 8 questões
-  conscientiousness: number[]; // Step 2 - 8 questões  
-  extraversion: number[];      // Step 3 - 8 questões
-  agreeableness: number[];     // Step 4 - 8 questões
-  neuroticism: number[];       // Step 5 - 8 questões
-  
-  // DISC + VARK (24 questões)
-  discVark: number[];          // Step 6 - 24 questões
-  
-  // MTC 5 Elementos (32 questões)
-  mtcWoodFire: number[];       // Step 7 - 16 questões (Madeira + Fogo)
-  mtcEarthMetalWater: number[]; // Step 8 - 16 questões (Terra + Metal + Água)
-  
-  // Metadados
-  completedSteps: number[];
-  startedAt: string;
-  lastUpdated: string;
+  onComplete: (data: any) => void;
+  onStepChange?: (step: number) => void;
 }
 
 interface StepConfig {
   id: number;
   title: string;
   subtitle: string;
-  icon: string;
+  component: React.ComponentType<any>;
   questionsCount: number;
-  category: string;
-  color: string;
   estimatedTime: number;
-  implemented: boolean;
+  category: string;
 }
 
-// ============================================================================
-// CONFIGURAÇÃO DOS STEPS - TODOS IMPLEMENTADOS!
-// ============================================================================
-
-const PSYCHOLOGICAL_STEPS: StepConfig[] = [
+// CONFIGURAÇÃO FIXA DOS 8 STEPS - NÃO PODE SER ALTERADA!
+const STEPS_CONFIG: StepConfig[] = [
   {
     id: 1,
-    title: "Abertura à Experiência",
-    subtitle: "Como você se relaciona com ideias e experiências novas?",
-    icon: "🧠",
+    title: 'Abertura à Experiência',
+    subtitle: 'Curiosidade, criatividade e abertura para novas ideias',
+    component: Step1_Openness,
     questionsCount: 8,
-    category: "Big Five",
-    color: "purple",
     estimatedTime: 3,
-    implemented: true
+    category: 'Big Five'
   },
   {
     id: 2,
-    title: "Conscienciosidade", 
-    subtitle: "Como você se organiza e se disciplina para alcançar objetivos?",
-    icon: "🎯",
+    title: 'Conscienciosidade',
+    subtitle: 'Organização, disciplina e responsabilidade',
+    component: Step2_Conscientiousness,
     questionsCount: 8,
-    category: "Big Five",
-    color: "blue",
     estimatedTime: 3,
-    implemented: true
+    category: 'Big Five'
   },
   {
     id: 3,
-    title: "Extroversão",
-    subtitle: "Como você interage socialmente e de onde vem sua energia?",
-    icon: "👥",
+    title: 'Extroversão',
+    subtitle: 'Sociabilidade, assertividade e energia',
+    component: Step3_Extraversion,
     questionsCount: 8,
-    category: "Big Five",
-    color: "green",
     estimatedTime: 3,
-    implemented: true
+    category: 'Big Five'
   },
   {
     id: 4,
-    title: "Amabilidade",
-    subtitle: "Como você se relaciona e coopera com outras pessoas?",
-    icon: "❤️",
+    title: 'Amabilidade',
+    subtitle: 'Cooperação, confiança e empatia',
+    component: Step4_Agreeableness,
     questionsCount: 8,
-    category: "Big Five",
-    color: "pink",
     estimatedTime: 3,
-    implemented: true
+    category: 'Big Five'
   },
   {
     id: 5,
-    title: "Neuroticismo",
-    subtitle: "Como você lida com estresse e estabilidade emocional?",
-    icon: "⚡",
+    title: 'Neuroticismo',
+    subtitle: 'Estabilidade emocional e gestão do estresse',
+    component: Step5_Neuroticism,
     questionsCount: 8,
-    category: "Big Five",
-    color: "red",
     estimatedTime: 3,
-    implemented: true
+    category: 'Big Five'
   },
   {
     id: 6,
-    title: "DISC + VARK",
-    subtitle: "Perfil comportamental e estilo de aprendizagem",
-    icon: "🔄",
+    title: 'Perfil Comportamental',
+    subtitle: 'DISC + Estilo de Aprendizagem VARK',
+    component: Step6_DiscVark,
     questionsCount: 24,
-    category: "Comportamental",
-    color: "orange",
     estimatedTime: 8,
-    implemented: true
+    category: 'Comportamental'
   },
   {
     id: 7,
-    title: "MTC: Madeira & Fogo",
-    subtitle: "Elementos Madeira e Fogo da Medicina Tradicional Chinesa",
-    icon: "🌱",
+    title: 'Elementos Madeira & Fogo',
+    subtitle: 'Medicina Tradicional Chinesa - Crescimento e Comunicação',
+    component: Step7_MtcWoodFire,
     questionsCount: 16,
-    category: "MTC",
-    color: "emerald",
-    estimatedTime: 5,
-    implemented: true
+    estimatedTime: 6,
+    category: 'MTC'
   },
   {
     id: 8,
-    title: "MTC: Terra, Metal & Água",
-    subtitle: "Elementos Terra, Metal e Água da Medicina Tradicional Chinesa",
-    icon: "🌍",
+    title: 'Elementos Terra, Metal & Água',
+    subtitle: 'Medicina Tradicional Chinesa - Estabilidade, Qualidade e Adaptação',
+    component: Step8_MtcEarthMetalWater,
     questionsCount: 16,
-    category: "MTC",
-    color: "amber",
-    estimatedTime: 5,
-    implemented: true
+    estimatedTime: 6,
+    category: 'MTC'
   }
 ];
 
-// ============================================================================
-// COMPONENTE PRINCIPAL
-// ============================================================================
-
-const PsychologicalForm: React.FC<PsychologicalFormProps> = ({
-  onComplete,
-  onBack,
-  initialData
+const PsychologicalFormDebug: React.FC<PsychologicalFormProps> = ({ 
+  onComplete, 
+  onStepChange 
 }) => {
-  // Estados principais
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<PsychologicalFormData>({
-    openness: initialData?.openness || new Array(8).fill(0),
-    conscientiousness: initialData?.conscientiousness || new Array(8).fill(0),
-    extraversion: initialData?.extraversion || new Array(8).fill(0),
-    agreeableness: initialData?.agreeableness || new Array(8).fill(0),
-    neuroticism: initialData?.neuroticism || new Array(8).fill(0),
-    discVark: initialData?.discVark || new Array(24).fill(0),
-    mtcWoodFire: initialData?.mtcWoodFire || new Array(16).fill(0),
-    mtcEarthMetalWater: initialData?.mtcEarthMetalWater || new Array(16).fill(0),
-    completedSteps: initialData?.completedSteps || [],
-    startedAt: initialData?.startedAt || new Date().toISOString(),
-    lastUpdated: new Date().toISOString()
-  });
+  const [responses, setResponses] = useState<Record<string, any>>({});
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [showTransition, setShowTransition] = useState(false);
-
-  // ============================================================================
-  // FUNÇÕES DE NAVEGAÇÃO
-  // ============================================================================
-
-  const handleStepDataChange = async (stepKey: keyof PsychologicalFormData, data: number[]) => {
-    const newFormData = {
-      ...formData,
-      [stepKey]: data,
-      lastUpdated: new Date().toISOString()
-    };
-    setFormData(newFormData);
-    console.log(`Step ${currentStep} data updated:`, data);
-  };
-
-  const handleNextStep = async () => {
-    const implementedSteps = PSYCHOLOGICAL_STEPS.filter(step => step.implemented);
+  // 🚨 DEBUG CRÍTICO - LOGS PARA CAÇAR O BUG
+  useEffect(() => {
+    console.log('🔍 PSYCHOLOGICAL FORM DEBUG - INICIANDO...');
+    console.log('='.repeat(50));
     
-    if (currentStep < implementedSteps.length) {
-      setShowTransition(true);
-      setTimeout(() => {
-        setCurrentStep(currentStep + 1);
-        setShowTransition(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 500);
+    const debugData = {
+      environment: window.location.hostname.includes('vercel') ? 'PRODUCTION' : 'LOCAL',
+      timestamp: new Date().toISOString(),
+      totalStepsConfigured: STEPS_CONFIG.length,
+      totalQuestionsConfigured: STEPS_CONFIG.reduce((sum, step) => sum + step.questionsCount, 0),
+      componentsImported: {
+        Step1_Openness: !!Step1_Openness,
+        Step2_Conscientiousness: !!Step2_Conscientiousness,
+        Step3_Extraversion: !!Step3_Extraversion,
+        Step4_Agreeableness: !!Step4_Agreeableness,
+        Step5_Neuroticism: !!Step5_Neuroticism,
+        Step6_DiscVark: !!Step6_DiscVark,
+        Step7_MtcWoodFire: !!Step7_MtcWoodFire,
+        Step8_MtcEarthMetalWater: !!Step8_MtcEarthMetalWater
+      }
+    };
+
+    console.log('🌍 Ambiente:', debugData.environment);
+    console.log('📊 Steps Configurados:', debugData.totalStepsConfigured);
+    console.log('❓ Questões Configuradas:', debugData.totalQuestionsConfigured);
+    console.log('📋 Componentes Importados:');
+    
+    Object.entries(debugData.componentsImported).forEach(([name, imported]) => {
+      const status = imported ? '✅' : '❌';
+      console.log(`  ${status} ${name}: ${imported}`);
+    });
+
+    // Verificar se todos os steps têm componentes válidos
+    const stepsWithoutComponents = STEPS_CONFIG.filter(step => !step.component);
+    if (stepsWithoutComponents.length > 0) {
+      console.log('🚨 STEPS SEM COMPONENTES:');
+      stepsWithoutComponents.forEach(step => {
+        console.log(`  ❌ Step ${step.id}: ${step.title}`);
+      });
+    }
+
+    console.log('='.repeat(50));
+    setDebugInfo(debugData);
+  }, []);
+
+  // Log quando mudar de step
+  useEffect(() => {
+    const currentStepConfig = STEPS_CONFIG.find(s => s.id === currentStep);
+    console.log(`🎯 Mudança para Step ${currentStep}:`, currentStepConfig?.title);
+    
+    if (onStepChange) {
+      onStepChange(currentStep);
+    }
+  }, [currentStep, onStepChange]);
+
+  // Função para avançar step com logs
+  const goToNextStep = () => {
+    const nextStep = currentStep + 1;
+    console.log(`➡️ Avançando do Step ${currentStep} para ${nextStep}`);
+    
+    if (nextStep <= STEPS_CONFIG.length) {
+      setCurrentStep(nextStep);
     } else {
-      await handleComplete();
+      console.log('🎉 Todos os steps concluídos! Finalizando...');
+      handleComplete();
     }
   };
 
-  const handlePreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleComplete = async () => {
-    setIsLoading(true);
-    try {
-      await onComplete(formData);
-    } catch (error) {
-      console.error('Erro ao completar formulário psicológico:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStepComplete = () => {
-    if (!formData.completedSteps.includes(currentStep)) {
-      setFormData(prev => ({
-        ...prev,
-        completedSteps: [...prev.completedSteps, currentStep]
-      }));
-    }
-  };
-
-  // ============================================================================
-  // CÁLCULOS DE PROGRESSO
-  // ============================================================================
-
-  const implementedSteps = PSYCHOLOGICAL_STEPS.filter(step => step.implemented);
-  const totalQuestions = implementedSteps.reduce((sum, step) => sum + step.questionsCount, 0);
-  const currentStepConfig = PSYCHOLOGICAL_STEPS.find(step => step.id === currentStep);
-  
-  const getStepProgress = (stepId: number) => {
-    const stepKey = getStepDataKey(stepId);
-    if (!stepKey) return 0;
-    const stepData = formData[stepKey] as number[];
-    const answered = stepData.filter(answer => answer > 0).length;
-    const total = PSYCHOLOGICAL_STEPS.find(s => s.id === stepId)?.questionsCount || 8;
-    return (answered / total) * 100;
-  };
-
-  const overallProgress = implementedSteps.reduce((sum, step) => {
-    return sum + (getStepProgress(step.id) / implementedSteps.length);
-  }, 0);
-
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
-
-  const getStepDataKey = (stepId: number): keyof PsychologicalFormData | null => {
-    switch (stepId) {
-      case 1: return 'openness';
-      case 2: return 'conscientiousness';
-      case 3: return 'extraversion';
-      case 4: return 'agreeableness';
-      case 5: return 'neuroticism';
-      case 6: return 'discVark';
-      case 7: return 'mtcWoodFire';
-      case 8: return 'mtcEarthMetalWater';
-      default: return null;
-    }
-  };
-
-  const getCurrentStepData = () => {
-    const stepKey = getStepDataKey(currentStep);
-    return stepKey ? formData[stepKey] as number[] : [];
-  };
-
-  // ============================================================================
-  // RENDER DOS STEPS
-  // ============================================================================
-
-  const renderCurrentStep = () => {
-    const stepData = getCurrentStepData();
-    const stepKey = getStepDataKey(currentStep);
+  // Função para voltar step
+  const goToPreviousStep = () => {
+    const prevStep = currentStep - 1;
+    console.log(`⬅️ Voltando do Step ${currentStep} para ${prevStep}`);
     
-    if (!stepKey) return <div>Step não implementado</div>;
-
-    const stepProps = {
-      data: stepData,
-      onDataChange: (data: number[]) => handleStepDataChange(stepKey, data),
-      onNext: handleNextStep,
-      onPrevious: handlePreviousStep,
-      onStepComplete: handleStepComplete
-    };
-
-    switch (currentStep) {
-      case 1:
-        return <Step1_Openness {...stepProps} />;
-      case 2:
-        return <Step2_Conscientiousness {...stepProps} />;
-      case 3:
-        return <Step3_Extraversion {...stepProps} />;
-      case 4:
-        return <Step4_Agreeableness {...stepProps} />;
-      case 5:
-        return <Step5_Neuroticism {...stepProps} />;
-      case 6:
-        return <Step6_DiscVark {...stepProps} />;
-      case 7:
-        return <Step7_MtcWoodFire {...stepProps} />;
-      case 8:
-        return <Step8_MtcEarthMetalWater {...stepProps} />;
-      default:
-        return <div>Step não encontrado</div>;
+    if (prevStep >= 1) {
+      setCurrentStep(prevStep);
     }
   };
 
-  // ============================================================================
-  // RENDER PRINCIPAL
-  // ============================================================================
+  // Salvar respostas de cada step
+  const handleStepComplete = (stepData: any) => {
+    console.log(`💾 Salvando dados do Step ${currentStep}:`, stepData);
+    
+    setResponses(prev => ({
+      ...prev,
+      [`step${currentStep}`]: stepData
+    }));
 
-  if (showTransition) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto"></div>
-          <div className="text-white text-xl">
-            Preparando próximo step...
+    // Auto-avançar para próximo step
+    setTimeout(() => {
+      goToNextStep();
+    }, 500);
+  };
+
+  // Finalizar formulário
+  const handleComplete = () => {
+    console.log('🎯 Finalizando formulário psicológico...');
+    console.log('📊 Respostas coletadas:', responses);
+    
+    const totalResponses = Object.keys(responses).length;
+    const expectedResponses = STEPS_CONFIG.length;
+    
+    console.log(`✅ Steps completados: ${totalResponses}/${expectedResponses}`);
+    
+    if (totalResponses < expectedResponses) {
+      console.log('⚠️ ATENÇÃO: Nem todos os steps foram completados!');
+    }
+
+    onComplete(responses);
+  };
+
+  // Obter configuração do step atual
+  const getCurrentStepConfig = (): StepConfig | null => {
+    const config = STEPS_CONFIG.find(s => s.id === currentStep);
+    if (!config) {
+      console.log(`🚨 ERRO: Configuração não encontrada para Step ${currentStep}`);
+    }
+    return config || null;
+  };
+
+  // Renderizar componente do step atual
+  const renderCurrentStep = () => {
+    const stepConfig = getCurrentStepConfig();
+    
+    if (!stepConfig) {
+      console.log(`🚨 ERRO CRÍTICO: Step ${currentStep} não tem configuração!`);
+      return (
+        <div className="text-center p-8">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-red-600 mb-2">Erro no Step {currentStep}</h3>
+          <p className="text-gray-600">Configuração do step não encontrada.</p>
+          <div className="mt-4 p-4 bg-red-50 rounded-lg text-left text-sm">
+            <strong>Debug Info:</strong>
+            <br />• Step solicitado: {currentStep}
+            <br />• Steps disponíveis: {STEPS_CONFIG.map(s => s.id).join(', ')}
+            <br />• Total configurado: {STEPS_CONFIG.length}
           </div>
         </div>
-      </div>
+      );
+    }
+
+    if (!stepConfig.component) {
+      console.log(`🚨 ERRO CRÍTICO: Step ${currentStep} não tem componente!`);
+      return (
+        <div className="text-center p-8">
+          <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-orange-600 mb-2">Componente Não Carregado</h3>
+          <p className="text-gray-600">O componente para "{stepConfig.title}" não foi carregado.</p>
+          <div className="mt-4 p-4 bg-orange-50 rounded-lg text-left text-sm">
+            <strong>Debug Info:</strong>
+            <br />• Step: {stepConfig.id} - {stepConfig.title}
+            <br />• Componente: {stepConfig.component ? 'Carregado' : 'AUSENTE'}
+            <br />• Categoria: {stepConfig.category}
+          </div>
+        </div>
+      );
+    }
+
+    const StepComponent = stepConfig.component;
+    console.log(`🎨 Renderizando Step ${currentStep}: ${stepConfig.title}`);
+
+    return (
+      <StepComponent
+        onComplete={handleStepComplete}
+        responses={responses[`step${currentStep}`] || {}}
+      />
     );
-  }
+  };
+
+  const currentStepConfig = getCurrentStepConfig();
+  const progress = (currentStep / STEPS_CONFIG.length) * 100;
+  const totalQuestions = STEPS_CONFIG.reduce((sum, step) => sum + step.questionsCount, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header com progresso */}
-      <div className="sticky top-0 z-10 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700/50 p-4">
-        <div className="max-w-4xl mx-auto">
-          {/* Progress geral */}
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <h1 className="text-white font-bold text-lg flex items-center">
-                <Brain className="w-6 h-6 mr-2 text-purple-400" />
-                Avaliação Psicológica Completa
-              </h1>
-              <span className="text-slate-300 text-sm">
-                {Math.round(overallProgress)}% concluído
-              </span>
+    <div className="max-w-4xl mx-auto">
+      {/* Debug Panel - Só mostra em desenvolvimento */}
+      {debugInfo.environment === 'LOCAL' && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-bold text-blue-800 mb-2">🔍 Debug Info</h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <strong>Ambiente:</strong> {debugInfo.environment}
+              <br />
+              <strong>Steps:</strong> {STEPS_CONFIG.length}
+              <br />
+              <strong>Questões:</strong> {totalQuestions}
             </div>
-            <div className="bg-slate-800 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-700"
-                style={{ width: `${overallProgress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Step atual */}
-          {currentStepConfig && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">{currentStepConfig.icon}</span>
-                <div>
-                  <h2 className="text-white font-medium">
-                    Step {currentStep}/8: {currentStepConfig.title}
-                  </h2>
-                  <p className="text-slate-400 text-sm">
-                    {currentStepConfig.subtitle}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-white font-bold">
-                  {Math.round(getStepProgress(currentStep))}%
-                </div>
-                <div className="text-slate-400 text-xs">
-                  ~{currentStepConfig.estimatedTime} min
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Conteúdo principal */}
-      <div className="p-6">
-        {renderCurrentStep()}
-      </div>
-
-      {/* Footer com navegação */}
-      {onBack && (
-        <div className="sticky bottom-0 bg-slate-900/80 backdrop-blur-sm border-t border-slate-700/50 p-4">
-          <div className="max-w-4xl mx-auto flex justify-between">
-            <button
-              onClick={onBack}
-              className="flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Menu
-            </button>
-            
-            {/* Resumo do progresso */}
-            <div className="text-center">
-              <div className="text-purple-400 font-bold text-lg">
-                96 Questões
-              </div>
-              <div className="text-slate-400 text-sm">
-                Sistema Mais Completo do Mundo
-              </div>
+            <div>
+              <strong>Step Atual:</strong> {currentStep}/{STEPS_CONFIG.length}
+              <br />
+              <strong>Progresso:</strong> {progress.toFixed(1)}%
+              <br />
+              <strong>Componentes:</strong> {Object.values(debugInfo.componentsImported || {}).filter(Boolean).length}/8
             </div>
           </div>
         </div>
       )}
+
+      {/* Header Principal */}
+      <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8 mb-8">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Brain className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-2">Avaliação Psicológica</h2>
+          <p className="text-slate-300 text-lg">
+            Sistema científico completo com {totalQuestions} questões validadas
+          </p>
+        </div>
+
+        {/* Barra de Progresso Global */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-slate-400">Progresso Geral</span>
+            <span className="text-sm text-slate-400">
+              Step {currentStep} de {STEPS_CONFIG.length}
+            </span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-3">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="text-center mt-2 text-slate-400 text-sm">
+            {progress.toFixed(1)}% concluído
+          </div>
+        </div>
+
+        {/* Info do Step Atual */}
+        {currentStepConfig && (
+          <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <span className="bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {currentStepConfig.category}
+                  </span>
+                  <span className="text-slate-400 text-sm">
+                    {currentStepConfig.questionsCount} questões
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white">
+                  {currentStepConfig.title}
+                </h3>
+                <p className="text-slate-300">
+                  {currentStepConfig.subtitle}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2 text-slate-400">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">~{currentStepConfig.estimatedTime} min</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Conteúdo do Step */}
+      <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8 mb-8">
+        {renderCurrentStep()}
+      </div>
+
+      {/* Navegação */}
+      <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={goToPreviousStep}
+            disabled={currentStep === 1}
+            className="flex items-center px-6 py-3 text-slate-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Step Anterior
+          </button>
+
+          <div className="flex items-center space-x-2">
+            {STEPS_CONFIG.map((step) => (
+              <div
+                key={step.id}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  step.id === currentStep
+                    ? 'bg-purple-500 w-8'
+                    : step.id < currentStep
+                    ? 'bg-green-500'
+                    : 'bg-slate-600'
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={goToNextStep}
+            className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:shadow-lg transition-all"
+          >
+            {currentStep === STEPS_CONFIG.length ? 'Finalizar' : 'Próximo Step'}
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default PsychologicalForm;
+export default PsychologicalFormDebug;

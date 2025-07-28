@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { ArrowLeft, Brain } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
-import PsychologicalFormBasic from '../../components/onboarding/PsychologicalFormBasic';
+import PsychologicalForm from '../../components/onboarding/PsychologicalForm';
 
 const PsychologicalAnalysisPage = () => {
   const router = useRouter();
@@ -157,9 +157,8 @@ const PsychologicalAnalysisPage = () => {
             </div>
           </div>
         ) : (
-          <PsychologicalFormBasic
+          <PsychologicalForm
             onComplete={handleComplete}
-            onBack={handleBack}
           />
         )}
       </div>

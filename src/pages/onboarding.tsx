@@ -28,6 +28,7 @@ import { usePsychologicalForm } from '../hooks/usePsychologicalForm';
 import BirthDataForm from '../components/onboarding/BirthDataForm';
 import BiohackingForm from '../components/onboarding/BiohackingForm';
 import PsychologicalForm from '../components/onboarding/PsychologicalForm';
+import CognitiveForm from '../components/onboarding/CognitiveForm'; 
 
 // CORREÇÃO: Tipos locais em vez de import externo
 interface BiohackingData {
@@ -331,11 +332,11 @@ const OnboardingPage: React.FC = () => {
   if (!user) {
     return null;
   }
-  // src/pages/onboarding.tsx - PARTE 3/4
+ 
 // ============================================================================
 // RENDER DO COMPONENTE - STEPS PRINCIPAIS
 // ============================================================================
-
+ // src/pages/onboarding.tsx - PARTE 3/4
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -622,5 +623,7 @@ const OnboardingPage: React.FC = () => {
 // ============================================================================
 // EXPORT DEFAULT
 // ============================================================================
+import BugHunterComponent from '../components/debug/BugHunterComponent';
 
 export default OnboardingPage;
+<BugHunterComponent />
