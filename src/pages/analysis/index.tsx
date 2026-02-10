@@ -1,7 +1,7 @@
 // src/pages/analysis/index.tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { ArrowRight, Calendar, Activity, Brain, Zap, Clock, CheckCircle, Lock, TrendingUp } from 'lucide-react';
+import { ArrowRight, Calendar, Activity, Brain, Zap, Clock, CheckCircle, Lock, TrendingUp, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import useAnalysisProgress from '../../hooks/useAnalysisProgress';
 
@@ -16,12 +16,42 @@ interface AnalysisModule {
   href: string;
   status: 'available' | 'completed' | 'locked';
   requiredFor?: string[];
+  dependsOn?: string;
 }
 
 const AnalysisHub = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { progress, loading, error, isAnalysisAvailable } = useAnalysisProgress();
+  const { progress, loading, error, refreshProgress } = useAnalysisProgress();
+
+  // ============================================================================
+  // LÓGICA DE DESBLOQUEIO PROGRESSIVO
+  // ============================================================================
+  
+  const isModuleAvailable = (moduleId: string): boolean => {
+    switch (moduleId) {
+      case 'birth':
+        return true; // Sempre disponível
+      case 'biohacking':
+        return progress.birth.completed && progress.birth.savedToSupabase;
+      case 'psychological':
+        return progress.biohacking.completed && progress.biohacking.savedToSupabase;
+      case 'cognitive':
+        return progress.psychological.completed && progress.psychological.savedToSupabase;
+      default:
+        return false;
+    }
+  };
+
+  const getModuleStatus = (moduleId: string): 'available' | 'completed' | 'locked' => {
+    if (progress[moduleId]?.completed) return 'completed';
+    if (isModuleAvailable(moduleId)) return 'available';
+    return 'locked';
+  };
+
+  // ============================================================================
+  // CONFIGURAÇÃO DOS MÓDULOS
+  // ============================================================================
 
   const analysisModules: AnalysisModule[] = [
     {
@@ -33,8 +63,7 @@ const AnalysisHub = () => {
       color: 'indigo',
       estimatedTime: '8-12 min',
       href: '/analysis/birth',
-      status: progress.birth.completed ? 'completed' : 'available',
-      requiredFor: ['Biohacking', 'Tradições Ancestrais']
+      status: getModuleStatus('birth')
     },
     {
       id: 'biohacking',
@@ -45,44 +74,92 @@ const AnalysisHub = () => {
       color: 'green',
       estimatedTime: '10-15 min',
       href: '/analysis/biohacking',
-      status: progress.biohacking.completed ? 'completed' : 
-              isAnalysisAvailable('biohacking') ? 'available' : 'locked',
-      requiredFor: ['Análise Integrada']
+      status: getModuleStatus('biohacking'),
+      dependsOn: 'birth'
     },
     {
       id: 'psychological',
       title: 'Perfil Psicológico',
-      subtitle: 'Big Five & Padrões Mentais',
-      description: 'Explore sua personalidade profunda com avaliações científicas validadas que revelam seus padrões comportamentais e preferências únicas.',
+      subtitle: 'Mente & Comportamento',
+      description: 'Entenda seus padrões mentais através de avaliações científicas: Big Five, DISC, VARK, Yin-Yang e 5 Elementos da MTC.',
       icon: Brain,
-      color: 'purple',
+      color: 'blue',
       estimatedTime: '15-20 min',
       href: '/analysis/psychological',
-      status: progress.psychological.completed ? 'completed' : 
-              isAnalysisAvailable('psychological') ? 'available' : 'locked',
-      requiredFor: ['Desenvolvimento Mental']
+      status: getModuleStatus('psychological'),
+      dependsOn: 'biohacking'
     },
     {
       id: 'cognitive',
       title: 'Perfil Cognitivo',
-      subtitle: 'Aprendizado & Processamento',
-      description: 'Entenda como sua mente processa informações e otimize suas estratégias de aprendizado, criatividade e resolução de problemas.',
+      subtitle: 'Aprendizado & Performance',
+      description: 'Descubra seu estilo de aprendizagem, capacidade de foco e estratégias de desenvolvimento cognitivo personalizadas.',
       icon: Zap,
-      color: 'yellow',
+      color: 'purple',
       estimatedTime: '12-18 min',
       href: '/analysis/cognitive',
-      status: progress.cognitive.completed ? 'completed' : 
-              isAnalysisAvailable('cognitive') ? 'available' : 'locked',
-      requiredFor: ['Otimização Cognitiva']
+      status: getModuleStatus('cognitive'),
+      dependsOn: 'psychological'
     }
   ];
 
+  // ============================================================================
+  // VERIFICAÇÃO PARA RESULTADOS
+  // ============================================================================
+
+  const canAccessResults = (): boolean => {
+    return analysisModules.every(module => 
+      progress[module.id]?.completed && 
+      progress[module.id]?.savedToSupabase
+    );
+  };
+
+  const completedCount = analysisModules.filter(module => 
+    progress[module.id]?.completed
+  ).length;
+
+  // ============================================================================
+  // HANDLERS DE NAVEGAÇÃO
+  // ============================================================================
+
+  const handleModuleClick = (module: AnalysisModule) => {
+    if (module.status === 'locked') {
+      // Mostrar toast ou modal explicando o bloqueio
+      alert(`🔒 Complete a análise "${module.dependsOn}" primeiro para desbloquear esta seção.`);
+      return;
+    }
+    
+    router.push(module.href);
+  };
+
+  const handleResultsClick = () => {
+    if (!canAccessResults()) {
+      alert(`🔒 Complete todas as ${4 - completedCount} análises restantes para acessar os resultados completos.`);
+      return;
+    }
+    
+    router.push('/results');
+  };
+
+  // ============================================================================
+  // REFRESH AUTOMÁTICO
+  // ============================================================================
+
+  useEffect(() => {
+    // Refresh do progresso ao voltar para esta página
+    refreshProgress();
+  }, [refreshProgress]);
+
+  // ============================================================================
+  // LOADING E ERROR STATES
+  // ============================================================================
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando sua central de análises...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Carregando progresso...</p>
         </div>
       </div>
     );
@@ -90,178 +167,161 @@ const AnalysisHub = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">⚠️ Erro ao Carregar</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Tentar Novamente
-            </button>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Erro ao carregar</h2>
+          <p className="text-slate-300 mb-6">{error}</p>
+          <button 
+            onClick={refreshProgress}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
   }
 
-  const completedCount = analysisModules.filter(module => module.status === 'completed').length;
-  const canAccessResults = completedCount > 0;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 py-12 max-w-6xl">
         
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            📊 Central de Análises NeoSapiens
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            🎯 Central de Análises
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Descubra suas três dimensões através de análises científicas e tradições ancestrais. 
-            Complete no seu ritmo e desbloqueie insights personalizados.
+          <p className="text-slate-300 text-lg max-w-3xl mx-auto">
+            Sua jornada personalizada de autoconhecimento através de análises científicas e tradições ancestrais
           </p>
-        </div>
-
-        {/* Progresso Geral */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">🎯 Seu Progresso</h2>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-indigo-600">{progress.overallProgress.toFixed(0)}%</div>
-              <div className="text-sm text-gray-500">{completedCount} de 4 completas</div>
+          
+          {/* Progress Bar */}
+          <div className="mt-8 max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-slate-400">Progresso Geral</span>
+              <span className="text-sm text-slate-400">
+                {completedCount}/4 completas
+              </span>
+            </div>
+            <div className="w-full bg-slate-700 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${(completedCount / 4) * 100}%` }}
+              />
             </div>
           </div>
-          
-          <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-            <div 
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-500"
-              style={{ width: `${progress.overallProgress}%` }}
-            ></div>
-          </div>
-          
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Iniciante</span>
-            <span>Explorador</span>
-            <span>Neo-Navegante</span>
-          </div>
         </div>
 
-        {/* Módulos de Análise */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          {analysisModules.map((module) => {
-            const IconComponent = module.icon;
+        {/* Analysis Modules Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          {analysisModules.map((module, index) => {
             const isAvailable = module.status === 'available';
             const isCompleted = module.status === 'completed';
             const isLocked = module.status === 'locked';
-            
+
             return (
-              <div
+              <div 
                 key={module.id}
                 className={`
-                  group relative bg-white rounded-2xl shadow-lg transition-all duration-300 
-                  ${isAvailable || isCompleted ? 'hover:shadow-xl hover:scale-105 cursor-pointer' : 'opacity-60'}
-                  ${isCompleted ? 'ring-2 ring-green-200' : ''}
+                  group relative bg-white/10 backdrop-blur-sm rounded-xl p-6 border
+                  transition-all duration-300 cursor-pointer
+                  ${isAvailable ? `border-${module.color}-500/30 hover:border-${module.color}-400 hover:bg-white/15 hover:scale-105` : ''}
+                  ${isCompleted ? 'border-green-500/30 bg-green-500/5' : ''}
+                  ${isLocked ? 'border-slate-600 opacity-60 cursor-not-allowed' : ''}
                 `}
-                onClick={() => (isAvailable || isCompleted) && router.push(module.href)}
+                onClick={() => handleModuleClick(module)}
               >
-                {/* Status Badge */}
-                <div className={`
-                  absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1
-                  ${isCompleted ? 'bg-green-100 text-green-800' : 
-                    isAvailable ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}
-                `}>
-                  {isCompleted && <CheckCircle className="w-3 h-3" />}
-                  {isLocked && <Lock className="w-3 h-3" />}
-                  <span>
-                    {isCompleted ? 'Completo' : isAvailable ? 'Disponível' : 'Bloqueado'}
-                  </span>
+                
+                {/* Status Icon */}
+                <div className="absolute top-4 right-4">
+                  {isCompleted && <CheckCircle className="w-6 h-6 text-green-500" />}
+                  {isLocked && <Lock className="w-6 h-6 text-slate-500" />}
                 </div>
 
-                <div className="p-8">
-                  {/* Icon & Title */}
-                  <div className="flex items-center mb-6">
-                    <div className={`
-                      w-14 h-14 rounded-xl flex items-center justify-center mr-4
-                      ${isCompleted ? 'bg-green-100' : 
-                        isAvailable ? `bg-${module.color}-100` : 'bg-gray-100'}
-                    `}>
-                      <IconComponent className={`
-                        w-7 h-7 
-                        ${isCompleted ? 'text-green-600' : 
-                          isAvailable ? `text-${module.color}-600` : 'text-gray-400'}
-                      `} />
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">{module.title}</h3>
-                      <p className="text-sm text-gray-500">{module.subtitle}</p>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-gray-600 mb-6 leading-relaxed">{module.description}</p>
-
-                  {/* Time & Requirements */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center text-gray-500">
-                      <Clock className="w-4 h-4 mr-1" />
-                      <span className="text-sm">{module.estimatedTime}</span>
-                    </div>
-                    
-                    {module.requiredFor && (
-                      <div className="text-xs text-gray-400">
-                        Necessário para: {module.requiredFor.join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Button */}
+                {/* Module Content */}
+                <div className="mb-4">
+                  <module.icon className={`w-12 h-12 mb-4 ${
+                    isCompleted ? 'text-green-500' : 
+                    isAvailable ? `text-${module.color}-400` : 'text-slate-500'
+                  }`} />
+                  
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    {module.title}
+                  </h3>
+                  
+                  <p className={`text-sm font-semibold mb-3 ${
+                    isCompleted ? 'text-green-400' : 
+                    isAvailable ? `text-${module.color}-300` : 'text-slate-400'
+                  }`}>
+                    {module.subtitle}
+                  </p>
+                  
+                  <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                    {module.description}
+                  </p>
+                  
                   <div className="flex items-center justify-between">
-                    {isCompleted ? (
-                      <span className="text-green-600 font-medium flex items-center">
-                        ✅ Revisar Análise
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    ) : isAvailable ? (
-                      <span className={`text-${module.color}-600 font-medium flex items-center`}>
-                        Começar Agora
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 font-medium flex items-center">
-                        <Lock className="w-4 h-4 mr-2" />
-                        Complete análises anteriores
-                      </span>
-                    )}
+                    <div className="flex items-center text-slate-400 text-sm">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {module.estimatedTime}
+                    </div>
+                    
+                    <div className="flex items-center">
+                      {isCompleted ? (
+                        <span className="text-green-600 font-medium flex items-center">
+                          ✅ Revisar Análise
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                      ) : isAvailable ? (
+                        <span className={`text-${module.color}-600 font-medium flex items-center`}>
+                          Começar Agora
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-medium flex items-center">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Complete análise anterior
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Dependency Indicator */}
+                {module.dependsOn && isLocked && (
+                  <div className="mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-600">
+                    <p className="text-xs text-slate-400">
+                      📋 Requer: <span className="font-semibold">{
+                        analysisModules.find(m => m.id === module.dependsOn)?.title
+                      }</span>
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Acesso aos Resultados */}
+        {/* Results Hub Access */}
         <div className={`
           bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-8 text-white
-          ${canAccessResults ? 'cursor-pointer hover:shadow-2xl transform hover:scale-105' : 'opacity-60'}
+          ${canAccessResults() ? 'cursor-pointer hover:shadow-2xl transform hover:scale-105' : 'opacity-60'}
           transition-all duration-300
         `}
-        onClick={() => canAccessResults && router.push('/results')}
+        onClick={handleResultsClick}
         >
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold mb-2">📈 Hub de Resultados</h2>
               <p className="text-indigo-100 mb-4">
-                {canAccessResults 
+                {canAccessResults() 
                   ? 'Acesse suas análises completas e insights personalizados'
-                  : 'Complete pelo menos uma análise para desbloquear'
+                  : `Complete as ${4 - completedCount} análises restantes para desbloquear`
                 }
               </p>
               
-              {canAccessResults ? (
+              {canAccessResults() ? (
                 <div className="flex items-center text-white font-medium">
                   <span>Ver Meus Resultados</span>
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -280,12 +340,12 @@ const AnalysisHub = () => {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-8 text-center">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+        <div className="mt-12 text-center">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <h3 className="text-lg font-bold text-white mb-3">
               🌟 Por que fazer todas as análises?
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-300">
               <div>
                 <strong>🎯 Análise Integrada:</strong> Correlações únicas entre suas dimensões
               </div>
@@ -298,6 +358,7 @@ const AnalysisHub = () => {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
